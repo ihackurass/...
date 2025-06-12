@@ -303,12 +303,6 @@ public class ComunidadServlet extends HttpServlet {
 
         Usuario usuarioActual = SessionUtil.getLoggedUser(request);
 
-        // Verificar que esté logueado
-        if (usuarioActual == null) {
-            response.sendRedirect("LoginServlet");
-            return;
-        }
-
         request.getRequestDispatcher("/views/comunidades/create.jsp").forward(request, response);
     }
 
@@ -319,11 +313,6 @@ public class ComunidadServlet extends HttpServlet {
             throws ServletException, IOException {
 
         Usuario usuarioActual = SessionUtil.getLoggedUser(request);
-
-        if (usuarioActual == null) {
-            response.sendRedirect("LoginServlet");
-            return;
-        }
 
         try {
             List<Comunidad> misComunidades = comunidadDAO.obtenerComunidadesSeguidas(usuarioActual.getId());
