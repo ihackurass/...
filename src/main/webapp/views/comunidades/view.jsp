@@ -1,0 +1,2780 @@
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page import="java.util.List"%>
+<%@page import="pe.aquasocial.entity.Comunidad"%>
+<%@page import="pe.aquasocial.entity.Usuario"%>
+<%@page import="pe.aquasocial.entity.Publicacion"%>
+<%@page import="pe.aquasocial.entity.ComunidadMiembro"%>
+<%@page import="pe.aquasocial.entity.Comentario"%>
+
+<%
+    Usuario usuarioActual = (Usuario) session.getAttribute("usuarioLogueado");
+    Comunidad comunidad = (Comunidad) request.getAttribute("comunidad");
+    List<Publicacion> publicaciones = (List<Publicacion>) request.getAttribute("publicaciones");
+    List<ComunidadMiembro> miembros = (List<ComunidadMiembro>) request.getAttribute("miembros");
+    Integer totalPublicaciones = (Integer) request.getAttribute("totalPublicaciones");
+    Integer totalMiembros = (Integer) request.getAttribute("totalMiembros");
+    Boolean puedePublicar = (Boolean) request.getAttribute("puedePublicar");
+    String mensajeExito = (String) request.getAttribute("success");
+    String mensajeError = (String) request.getAttribute("error");
+    
+    if (totalPublicaciones == null) totalPublicaciones = 0;
+    if (totalMiembros == null) totalMiembros = 0;
+    if (puedePublicar == null) puedePublicar = false;
+    
+    // Para compatibilidad con funciones de home.jsp
+    boolean tienePrivilegios = false;
+    if (usuarioActual != null) {
+        tienePrivilegios = usuarioActual.isPrivilegio();
+    }
+%>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= comunidad != null ? comunidad.getNombre() : "Comunidad" %></title>
+    <jsp:include page="/components/css_imports.jsp" />
+        <style id="toast-styles">
+            @keyframes toastProgress {
+                0% { transform: scaleX(1); }
+                100% { transform: scaleX(0); }
+            }
+            
+            .toast-close:hover {
+                opacity: 1 !important;
+                background: rgba(255,255,255,0.1) !important;
+            }
+                
+            .toast-notification:hover .toast-progress {
+                animation-play-state: paused !important;
+            }
+            
+            /* Responsive */
+            @media (max-width: 480px) {
+                #toast-container {
+                    left: 10px !important;
+                    right: 10px !important;
+                    max-width: none !important;
+                }
+            }
+        </style>
+    <style>
+    
+    /* ESTILOS DE HOME.JSP - EXACTOS PARA REUTILIZAR */
+    .container {
+        margin-bottom: 30px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+        border: 1px solid #ddd;
+    }
+    .modal-dialog {
+        max-width: 500px;
+    }
+
+    .post-container {
+        margin-bottom: 30px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid #ddd;
+        transition: all 0.3s ease;
+    }
+
+    .post-container:hover {
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .post-header img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+
+    .post-header .user-info h6 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .post-header .user-info .handle {
+        font-size: 14px;
+        color: #888;
+    }
+
+    .post-header .user-info .post-time {
+        font-size: 12px;
+        color: #999;
+        margin-top: 2px;
+    }
+    .post-header .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .post-header .user-info .username {
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .post-header .user-info .handle {
+        font-size: 14px;
+        color: #888;
+    }
+    
+    .post-header .user-info .post-time {
+        font-size: 12px;
+        color: #999;
+        margin-top: 2px;
+    }
+
+    .post-content p {
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+
+    .post-image {
+        width: 100%;
+        height: 300px;
+        background-size: cover;
+        background-position: center;
+        border-radius: 10px;
+        margin-bottom: 15px;
+    }
+
+    .post-actions {
+        display: flex;
+        align-items: center;
+        margin-top: 15px;
+        gap: 10px;
+    }
+
+    .action-button {
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 15px;
+        font-size: 14px;
+        border-radius: 5px;
+        transition: background-color 0.3s, color 0.3s;
+        cursor: pointer;
+        border: 1px solid #ddd;
+        background: white;
+    }
+    
+    .image-preview-container {
+        position: relative;
+        display: none;
+        margin-top: 15px;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        background-color: #f8f9fa;
+    }
+    
+    .image-preview {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .remove-image-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 14px;
+        z-index: 10;
+    }
+                
+    .remove-image-btn:hover {
+        background-color: #c82333;
+    }
+                
+    .action-button i {
+        margin-right: 5px;
+    }
+
+    .action-button:hover {
+        background-color: #f0f0f0;
+        color: #333;
+    }
+
+    .action-button.liked {
+        background-color: #ff6b6b;
+        color: white;
+        border-color: #ff6b6b;
+    }
+
+    .comments-section {
+       margin-top: 15px;
+       border-top: 1px solid #ddd;
+       padding: 10px 8px;
+       max-height: 300px;
+       overflow-y: auto;
+       scrollbar-width: thin;
+       scrollbar-color: #ccc transparent;
+    }
+
+    .new-comment {
+       display: flex;
+       align-items: center;
+       margin: 15px 8px 8px 8px;
+       gap: 8px;
+    }
+
+    .new-comment input {
+       flex: 1;
+       padding: 8px 12px;
+       border: 1px solid #ddd;
+       border-radius: 15px;
+       font-size: 13px;
+       height: 36px;
+       margin-right: 4px;
+    }
+
+    .new-comment button {
+       background-color: #112ed4;
+       color: white;
+       border: none;
+       border-radius: 50%;
+       width: 36px;
+       height: 36px;
+       cursor: pointer;
+       font-size: 14px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       margin-right: 4px;
+    }
+
+    .comments-section::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .comments-section::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+    }
+
+    .comments-section::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 3px;
+        transition: background 0.3s ease;
+    }
+
+    .comments-section::-webkit-scrollbar-thumb:hover {
+        background: #999;
+    }
+
+    .comment {
+        display: flex;
+        align-items: flex-start;
+        margin-top: 10px;
+    }
+
+    .comment img {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+
+    .comment .comment-content {
+        background-color: #f9f9f9;
+        padding: 8px 12px;
+        border-radius: 10px;
+        flex: 1;
+    }
+
+    .comment .comment-content .comment-text {
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 2px;
+    }
+
+    .comment .comment-content .comment-info {
+        font-size: 12px;
+        color: #888;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 5px;
+    }
+
+    /* ALERTAS DE HOME.JSP */
+    .alert-custom {
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        border-left: 4px solid;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+    }
+
+    .alert-error {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+        color: #721c24;
+    }
+
+    .no-posts {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .no-posts i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+        color: #007bff;
+    }
+
+    .no-posts h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    /* ESTILOS ESPECÍFICOS DE COMUNIDAD - HEADER */
+    .community-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .community-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="85" cy="15" r="20" fill="rgba(255,255,255,0.1)"/><circle cx="15" cy="85" r="15" fill="rgba(255,255,255,0.1)"/></svg>');
+        pointer-events: none;
+    }
+
+    .community-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        border: 3px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .community-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .community-handle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 15px;
+    }
+
+    .community-description {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        opacity: 0.95;
+        margin-bottom: 20px;
+    }
+
+    .status-badges {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .badge-creator {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 2px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .badge-admin {
+        background: rgba(23, 162, 184, 0.2);
+        color: #17a2b8;
+        border: 2px solid rgba(23, 162, 184, 0.3);
+    }
+
+    .badge-member {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+        border: 2px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .badge-public {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+        border: 2px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .badge-private {
+        background: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 2px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .community-stats {
+        display: flex;
+        gap: 30px;
+        margin-top: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 2rem;
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-top: 5px;
+    }
+
+    .action-buttons {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+    }
+
+    .btn-community-action {
+        padding: 12px 24px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-community-action:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+    }
+
+    .btn-join {
+        background: rgba(40, 167, 69, 0.8);
+        border-color: #28a745;
+    }
+
+    .btn-leave {
+        background: rgba(220, 53, 69, 0.8);
+        border-color: #dc3545;
+    }
+
+    .btn-edit {
+        background: rgba(255, 193, 7, 0.8);
+        border-color: #ffc107;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb-custom {
+        background: none;
+        padding: 0;
+        margin-bottom: 20px;
+    }
+
+    .breadcrumb-custom a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .breadcrumb-custom a:hover {
+        text-decoration: underline;
+    }
+
+    /* Sección de miembros */
+    .content-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: 1px solid #f0f0f0;
+    }
+
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 2px solid #f8f9fa;
+        padding-bottom: 10px;
+    }
+
+    .section-title i {
+        color: #007bff;
+    }
+
+    .members-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .member-item {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .member-item:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+    }
+
+    .member-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #28a745);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    .member-info h6 {
+        margin: 0 0 3px 0;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .member-role {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .role-creator {
+        background: #ffc107;
+        color: #333;
+    }
+
+    .role-admin {
+        background: #17a2b8;
+        color: white;
+    }
+
+    .role-member {
+        background: #28a745;
+        color: white;
+    }
+
+    /* Nuevo post section */
+    .new-post-section {
+        background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+        border: 2px dashed #007bff;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .btn-new-post {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-new-post:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,123,255,0.4);
+    }
+               .success-message {
+                    display: none;
+                    text-align: center;
+                    color: #28a745;
+                    margin: 10px 0;
+                }
+                .warning-message {
+                    display: none;
+                    text-align: center;
+                    color: #baad1e;
+                    margin: 10px 0;
+                }
+                
+                
+                .payment-method-option .payment-label {
+                    transition: all 0.3s ease;
+                    background: #fff;
+                }
+
+                .payment-method-option .payment-label:hover {
+                    border-color: #007bff !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+                }
+
+                .payment-method-option input:checked + .payment-label {
+                    border-color: #28a745 !important;
+                    background-color: #f8f9fa;
+                    box-shadow: 0 0 0 2px rgba(40,167,69,0.25);
+                }
+
+                .cursor-pointer {
+                    cursor: pointer;
+                }
+
+                .form-control:focus {
+                    border-color: #28a745;
+                    box-shadow: 0 0 0 0.2rem rgba(40,167,69,0.25);
+                }
+
+                #donationTotal {
+                    font-size: 1.25rem;
+                    font-weight: bold;
+                }
+                
+                .modal-dialog {
+                    max-width: 500px;
+                }
+
+                .form-control:focus {
+                    border-color: #00a650;
+                    box-shadow: 0 0 0 0.2rem rgba(0, 166, 80, 0.25);
+                }
+
+                .btn-success {
+                    background-color: #00a650;
+                    border-color: #00a650;
+                }
+
+                .btn-success:hover {
+                    background-color: #008f45;
+                    border-color: #008f45;
+                }
+
+                .alert-info {
+                    background-color: #e3f2fd;
+                    border-color: #bbdefb;
+                    color: #0d47a1;
+                }
+
+                .alert-success {
+                    background-color: #e8f5e8;
+                    border-color: #c3e6c3;
+                    color: #2e7d32;
+                }
+
+                #donationTotal {
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                }
+
+                .border {
+                    border: 1px solid #dee2e6 !important;
+                }
+
+                .rounded {
+                    border-radius: 0.375rem !important;
+                }
+
+                .text-center small {
+                    font-size: 0.75rem;
+                }
+
+                .payment-result-modal {
+                    border-radius: 15px;
+                    border: none;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                    overflow: hidden;
+                }
+
+                .payment-result-modal .modal-header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 30px 20px 20px;
+                    position: relative;
+                }
+
+                .payment-result-modal .modal-title {
+                    color: white;
+                    font-weight: 600;
+                    font-size: 1.2rem;
+                }
+
+                .payment-result-modal .close {
+                    position: absolute;
+                    top: 15px;
+                    right: 20px;
+                    color: white;
+                    opacity: 0.8;
+                    font-size: 1.5rem;
+                }
+
+                .payment-result-modal .close:hover {
+                    color: white;
+                    opacity: 1;
+                }
+
+                .payment-icon-circle {
+                    width: 80px;
+                    height: 80px;
+                    background: linear-gradient(135deg, #007bff, #0056b3);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto;
+                    animation: pulseIcon 2s infinite;
+                    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+                }
+
+                .payment-icon {
+                    color: white;
+                    font-size: 2.5rem;
+                }
+
+                .payment-result-modal .modal-body {
+                    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+                    padding: 30px 20px;
+                }
+
+                .payment-message {
+                    margin: 20px 0;
+                }
+
+                .payment-message .lead {
+                    font-size: 1.1rem;
+                    color: #495057;
+                    margin-bottom: 0;
+                }
+
+                .aqua-social-badge {
+                    background: rgba(102, 126, 234, 0.1);
+                    border: 1px solid rgba(102, 126, 234, 0.2);
+                    padding: 12px 20px;
+                    border-radius: 10px;
+                    margin-top: 20px;
+                }
+
+                .aqua-social-badge small {
+                    font-weight: 600;
+                    color: #667eea;
+                }
+
+                .payment-result-modal .modal-footer {
+                    background: #ffffff;
+                    padding: 20px;
+                }
+
+                .btn-continue {
+                    border-radius: 25px;
+                    padding: 12px 30px;
+                    font-weight: 600;
+                    font-size: 1rem;
+                    min-width: 120px;
+                    transition: all 0.3s ease;
+                }
+
+                .btn-continue:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+                }
+
+                .payment-result-modal.success .modal-header {
+                    background: linear-gradient(135deg, #28a745, #20c997);
+                }
+
+                .payment-result-modal.success .payment-icon-circle {
+                    background: linear-gradient(135deg, #28a745, #20c997);
+                    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+                }
+
+                .payment-result-modal.success .payment-icon {
+                    color: white;
+                }
+
+                .payment-result-modal.success .btn-continue {
+                    background: linear-gradient(135deg, #28a745, #20c997);
+                    border: none;
+                    color: white;
+                }
+
+                .payment-result-modal.success .btn-continue:hover {
+                    background: linear-gradient(135deg, #218838, #1ea97c);
+                    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+                }
+
+                .payment-result-modal.success .aqua-social-badge {
+                    background: rgba(40, 167, 69, 0.1);
+                    border-color: rgba(40, 167, 69, 0.2);
+                }
+
+                .payment-result-modal.success .aqua-social-badge small {
+                    color: #28a745;
+                }
+
+                .payment-result-modal.error .modal-header {
+                    background: linear-gradient(135deg, #dc3545, #c82333);
+                }
+
+                .payment-result-modal.error .payment-icon-circle {
+                    background: linear-gradient(135deg, #dc3545, #c82333);
+                    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+                    animation: shakeIcon 0.5s ease-in-out;
+                }
+
+                .payment-result-modal.error .payment-icon {
+                    color: white;
+                }
+
+                .payment-result-modal.error .btn-continue {
+                    background: linear-gradient(135deg, #dc3545, #c82333);
+                    border: none;
+                    color: white;
+                }
+
+                .payment-result-modal.error .btn-continue:hover {
+                    background: linear-gradient(135deg, #c82333, #bd2130);
+                    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+                }
+
+                .payment-result-modal.error .aqua-social-badge {
+                    background: rgba(220, 53, 69, 0.1);
+                    border-color: rgba(220, 53, 69, 0.2);
+                }
+
+                .payment-result-modal.error .aqua-social-badge small {
+                    color: #dc3545;
+                }
+
+                .payment-result-modal.warning .modal-header {
+                    background: linear-gradient(135deg, #ffc107, #fd7e14);
+                }
+
+                .payment-result-modal.warning .payment-icon-circle {
+                    background: linear-gradient(135deg, #ffc107, #fd7e14);
+                    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+                }
+
+                .payment-result-modal.warning .payment-icon {
+                    color: #212529;
+                }
+
+                .payment-result-modal.warning .btn-continue {
+                    background: linear-gradient(135deg, #ffc107, #fd7e14);
+                    border: none;
+                    color: #212529;
+                }
+
+                .payment-result-modal.warning .btn-continue:hover {
+                    background: linear-gradient(135deg, #e0a800, #e55a00);
+                    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+                }
+
+                .payment-result-modal.warning .aqua-social-badge {
+                    background: rgba(255, 193, 7, 0.1);
+                    border-color: rgba(255, 193, 7, 0.2);
+                }
+
+                .payment-result-modal.warning .aqua-social-badge small {
+                    color: #ffc107;
+                }
+
+                @keyframes pulseIcon {
+                    0% {
+                        transform: scale(1);
+                        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+                    }
+                    50% {
+                        transform: scale(1.05);
+                        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+                    }
+                    100% {
+                        transform: scale(1);
+                        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+                    }
+                }
+
+                @keyframes shakeIcon {
+                    0%, 100% {
+                        transform: translateX(0);
+                    }
+                    25% {
+                        transform: translateX(-5px);
+                    }
+                    75% {
+                        transform: translateX(5px);
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .payment-result-modal {
+                        margin: 20px;
+                    }
+
+                    .payment-result-modal .modal-header {
+                        padding: 20px 15px 15px;
+                    }
+
+                    .payment-icon-circle {
+                        width: 60px;
+                        height: 60px;
+                    }
+
+                    .payment-icon {
+                        font-size: 2rem;
+                    }
+
+                    .payment-result-modal .modal-title {
+                        font-size: 1.1rem;
+                    }
+
+                    .payment-message .lead {
+                        font-size: 1rem;
+                    }
+
+                    .btn-continue {
+                        padding: 10px 25px;
+                        font-size: 0.9rem;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .payment-result-modal .modal-body {
+                        padding: 20px 15px;
+                    }
+
+                    .aqua-social-badge {
+                        padding: 10px 15px;
+                    }
+
+                    .payment-result-modal .modal-footer {
+                        padding: 15px;
+                    }
+                }
+</style>
+</head>
+
+<body>
+    <!-- Sidebar Izquierdo -->
+    <jsp:include page="/components/sidebar.jsp" />
+
+    <!-- Main -->
+    <main>
+        <div class="site-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <!-- Breadcrumb -->
+                        <nav aria-label="breadcrumb" class="breadcrumb-custom">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item">
+                                    <a href="ComunidadServlet">
+                                        <i class="fas fa-users"></i> Comunidades
+                                    </a>
+                                </li>
+                                <li class="breadcrumb-item active">
+                                    <%= comunidad != null ? comunidad.getNombre() : "Comunidad" %>
+                                </li>
+                            </ol>
+                        </nav>
+
+                        <% if (comunidad != null) { %>
+                            <!-- Header de la comunidad -->
+                            <div class="community-header">
+                                <!-- Botones de acción -->
+                                <div class="action-buttons">
+                                    <% if (usuarioActual != null) { %>
+                                        <% if (comunidad.isUsuarioEsSeguidor()) { %>
+                                            <% if (comunidad.isUsuarioEsCreador()) { %>
+                                                <a href="ComunidadServlet?action=edit&id=<%= comunidad.getIdComunidad() %>" 
+                                                   class="btn-community-action btn-edit">
+                                                    <i class="fas fa-edit"></i>Editar
+                                                </a>
+                                            <% } else { %>
+                                                <form method="post" action="ComunidadServlet" style="display: inline;">
+                                                    <input type="hidden" name="action" value="leave">
+                                                    <input type="hidden" name="idComunidad" value="<%= comunidad.getIdComunidad() %>">
+                                                    <button type="submit" class="btn-community-action btn-leave">
+                                                        <i class="fas fa-sign-out-alt"></i>Salir
+                                                    </button>
+                                                </form>
+                                            <% } %>
+                                        <% } else { %>
+                                            <form method="post" action="ComunidadServlet" style="display: inline;">
+                                                <input type="hidden" name="action" value="join">
+                                                <input type="hidden" name="idComunidad" value="<%= comunidad.getIdComunidad() %>">
+                                                <button type="submit" class="btn-community-action btn-join">
+                                                    <i class="fas fa-plus"></i>Unirse
+                                                </button>
+                                            </form>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+
+                                <!-- Contenido del header -->
+                                <div class="community-avatar-large">
+                                    <%= comunidad.getNombre().substring(0,1).toUpperCase() %>
+                                </div>
+                                
+                                <h1 class="community-title">
+                                    <%= comunidad.getNombre() %>
+                                </h1>
+                                
+                                <div class="community-handle">
+                                    @<%= comunidad.getNombre().replaceAll(" ", "").toLowerCase() %>
+                                </div>
+
+                                <% if (comunidad.getDescripcion() != null && !comunidad.getDescripcion().trim().isEmpty()) { %>
+                                    <div class="community-description">
+                                        <%= comunidad.getDescripcion() %>
+                                    </div>
+                                <% } %>
+
+                                <!-- Badges de estado -->
+                                <div class="status-badges">
+                                    <% if (comunidad.isEsPublica()) { %>
+                                        <div class="status-badge badge-public">
+                                            <i class="fas fa-globe"></i>Comunidad Pública
+                                        </div>
+                                    <% } else { %>
+                                        <div class="status-badge badge-private">
+                                            <i class="fas fa-lock"></i>Comunidad Privada
+                                        </div>
+                                    <% } %>
+
+                                    <% if (usuarioActual != null && comunidad.isUsuarioEsCreador()) { %>
+                                        <div class="status-badge badge-creator">
+                                            <i class="fas fa-crown"></i>Eres el Creador
+                                        </div>
+                                    <% } else if (usuarioActual != null && comunidad.isUsuarioEsAdmin()) { %>
+                                        <div class="status-badge badge-admin">
+                                            <i class="fas fa-shield-alt"></i>Eres Administrador
+                                        </div>
+                                    <% } else if (usuarioActual != null && comunidad.isUsuarioEsSeguidor()) { %>
+                                        <div class="status-badge badge-member">
+                                            <i class="fas fa-user"></i>Eres Miembro
+                                        </div>
+                                    <% } %>
+                                </div>
+
+                                <!-- Estadísticas -->
+                                <div class="community-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-number"><%= totalMiembros %></span>
+                                        <span class="stat-label">Miembros</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number"><%= totalPublicaciones %></span>
+                                        <span class="stat-label">Publicaciones</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">
+                                            <%= comunidad.getFechaCreacion() != null ? 
+                                                comunidad.getFechaCreacion().getYear() : "2024" %>
+                                        </span>
+                                        <span class="stat-label">Año de Creación</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sección para nueva publicación -->
+                            <% if (puedePublicar) { %>
+                                <div class="new-post-section">
+                                    <h4><i class="fas fa-edit"></i> ¿Qué quieres compartir con la comunidad?</h4>
+                                    <p style="margin: 10px 0;">Comparte noticias, preguntas, recursos o cualquier contenido relevante</p>
+                                    <button class="btn-new-post" data-toggle="modal" data-target="#postModal">
+                                        <i class="fas fa-plus"></i>Nueva Publicación
+                                    </button>
+                                </div>
+                            <% } %>
+
+                            <!-- ALERTAS EXACTAS DE HOME.JSP -->
+                            <% if (mensajeExito != null) { %>
+                                <div class="alert-custom alert-success">
+                                    <i class="fas fa-check-circle"></i> <%= mensajeExito %>
+                                </div>
+                            <% } %>
+                            
+                            <% if (mensajeError != null) { %>
+                                <div class="alert-custom alert-error">
+                                    <i class="fas fa-exclamation-triangle"></i> <%= mensajeError %>
+                                </div>
+                            <% } %>
+
+                            <!-- Contador de publicaciones EXACTO DE HOME.JSP -->
+                            <% if (totalPublicaciones != null && totalPublicaciones > 0) { %>
+                                <div class="mb-3 text-muted">
+                                    <small><i class="fas fa-newspaper"></i> Mostrando <%= totalPublicaciones %> publicaciones de la comunidad</small>
+                                </div>
+                            <% } %>
+
+                            <!-- CONTENEDOR DE PUBLICACIONES EXACTO DE HOME.JSP -->
+                            <div id="publicacionesContainer">
+                                <% 
+                                if (publicaciones != null && !publicaciones.isEmpty()) {
+                                    for (Publicacion pub : publicaciones) {
+                                        @SuppressWarnings("unchecked")
+                                        List<Comentario> comentarios = (List<Comentario>) request.getAttribute("comentarios_" + pub.getIdPublicacion());
+                                %>
+                                        <div class="post-container" data-post-id="<%= pub.getIdPublicacion() %>">
+                                            <div class="post-header">
+                                                <img src="<%= pub.getAvatarUsuario() != null ? pub.getAvatarUsuario() : "assets/images/avatars/default.png" %>" 
+                                                     alt="Avatar">
+                                                <div class="user-info">
+                                                    <span class="username"><%= pub.getNombreCompleto() != null ? pub.getNombreCompleto() : "Nombre" %></span>
+                                                    <span class="handle"><%= pub.getNombreUsuario() != null ? pub.getNombreUsuario() : "@usuario" %></span>
+                                                    <span class="post-time"><%= pub.getTiempoTranscurrido() %></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="post-content">
+                                                <p><%= pub.getTexto() %></p>
+                                                
+                                                <% if (pub.getImagenUrl() != null && !pub.getImagenUrl().trim().isEmpty()) { %>
+                                                    <div class="post-image" style="background-image: url('<%= pub.getImagenUrl() %>')"></div>
+                                                <% } %>
+                                            </div>
+                                                <!-- Acciones EXACTAS DE HOME.JSP -->
+                                                <div class="post-actions d-flex flex-wrap justify-content-between align-items-center">
+                                                <button class="action-button btn flex-grow-1 text-center me-2 mb-2" 
+                                                        onclick="toggleLike(<%= pub.getIdPublicacion() %>)" 
+                                                        id="likeBtn_<%= pub.getIdPublicacion() %>"
+                                                        data-user-liked="<%= pub.isUsuarioDioLike() %>">
+                                                    <i class="<%= pub.isUsuarioDioLike() ? "fas" : "far" %> fa-heart"></i> 
+                                                    <span id="likeCount_<%= pub.getIdPublicacion() %>"><%= pub.getCantidadLikes() %></span>
+                                                </button>
+                                                    
+                                                <button class="action-button btn flex-grow-1 text-center me-2 mb-2" 
+                                                        onclick="toggleComments(<%= pub.getIdPublicacion() %>)">
+                                                    <i class="fas fa-comment"></i> <span id="commentCount_<%= pub.getIdPublicacion() %>"><%= pub.getCantidadComentarios() %></span>
+                                                </button>
+                                                    
+                                                <% if (pub.isPermiteDonacion()) { %>
+                                                    <button class="action-button btn flex-grow-1 text-center mb-2" 
+                                                            data-creator-id="<%= pub.getIdUsuario() %>"
+                                                            onclick="openDonationModal(<%= pub.getIdPublicacion() %>, '<%= pub.getNombreCompleto() != null ? pub.getNombreCompleto().replace("'", "\\'") : "Usuario" %>', '<%= pub.getNombreUsuario() != null ? pub.getNombreUsuario().replace("'", "\\'") : "@usuario" %>', <%= pub.getIdUsuario() %>)"
+                                                            <%= (usuarioActual != null && pub.getIdUsuario() == usuarioActual.getId()) ? "disabled" : "" %>>
+                                                        <i class="fas fa-gift"></i> Regalar
+                                                        <% if (pub.getTotalDonaciones() > 0) { %>
+                                                            <small>($<%= String.format("%.2f", pub.getTotalDonaciones()) %>)</small>
+                                                        <% } %>   
+                                                    </button>
+                                                <% } %>
+                                                    
+                                                </div>
+
+                                                <!-- SECCIÓN DE COMENTARIOS EXACTA DE HOME.JSP -->
+                                                <div class="comments-section" id="commentsSection_<%= pub.getIdPublicacion() %>" style="display: none;">
+                                                    <div id="commentsList_<%= pub.getIdPublicacion() %>">
+
+                                                    <!-- Lista de comentarios existentes EXACTA DE HOME.JSP -->
+                                                    <% if (comentarios != null && !comentarios.isEmpty()) { %>
+                                                        <% for (Comentario comentario : comentarios) { %>
+                                                            <div class="comment" data-comment-id="<%= comentario.getIdComentario() %>"
+                                                                 data-author-name="<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario() : "Usuario" %>">
+                                                                <img src="<%= comentario.getAvatarUsuario() != null ? comentario.getAvatarUsuario() : "assets/images/avatars/default.png" %>" 
+                                                                     alt="Avatar"
+                                                                     onerror="this.src='assets/images/avatars/default.png'">
+                                                                <div class="comment-content">
+                                                                    <div class="comment-text">
+                                                                        <strong>@<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario() : "Usuario" %></strong>: <%= comentario.getContenido() %>
+                                                                    </div>
+                                                                    <div class="comment-info">
+                                                                        <span><%= comentario.getHoraFormateada() %></span>
+                                                                        <% if (usuarioActual != null && (usuarioActual.getId() == comentario.getIdUsuario() || usuarioActual.isPrivilegio())) { %>
+                                                                            <div class="comment-actions" style="float: right;">
+                                                                                <button class="btn btn-sm btn-outline-primary" 
+                                                                                        onclick="editarComentario(<%= comentario.getIdComentario() %>, '<%= comentario.getContenido().replace("'", "\\'").replace("\"", "\\\"") %>')" 
+                                                                                        title="Editar comentario">
+                                                                                    <i class="fas fa-edit"></i>
+                                                                                </button>
+                                                                                <button class="btn btn-sm btn-outline-danger" 
+                                                                                        onclick="eliminarComentario(<%= comentario.getIdComentario() %>, '<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario().replace("'", "\\'") : "Usuario" %>')" 
+                                                                                        title="Eliminar comentario">
+                                                                                    <i class="fas fa-trash"></i>
+                                                                                </button>
+                                                                            </div>
+                                                                        <% } %>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+                                                    <% } %>
+                                                </div>
+                                                <% if (usuarioActual != null) { %>
+                                                <!-- Formulario para nuevo comentario -->
+                                                <div class="new-comment">
+                                                    <input type="text" placeholder="Escriba un comentario..." 
+                                                           id="commentInput_<%= pub.getIdPublicacion() %>" 
+                                                           onkeypress="handleCommentKeyPress(event, <%= pub.getIdPublicacion() %>)">
+                                                    <button onclick="addComment(<%= pub.getIdPublicacion() %>)">
+                                                        <i class="fas fa-paper-plane"></i>
+                                                    </button>
+                                                </div>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                <%
+                                    }
+                                } else {
+                                %>
+                                    <div class="no-posts">
+                                        <i class="fas fa-newspaper"></i>
+                                        <h4>No hay publicaciones en esta comunidad</h4>
+                                        <p>Esta comunidad aún no tiene publicaciones.</p>
+                                        <% if (puedePublicar) { %>
+                                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#postModal" 
+                                                    style="padding: 8px 16px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                                                <i class="fas fa-plus" style="font-size: 11px;"></i>Crear Primera Publicación
+                                            </button>
+                                        <% } %>
+                                    </div>
+                                <%
+                                }
+                                %>
+                            </div>
+                            <!-- SECCIÓN DE MIEMBROS ABAJO -->
+                            <div class="content-section">
+                                <div class="section-title">
+                                    <i class="fas fa-users"></i>
+                                    Miembros de la Comunidad
+                                    <% if (miembros != null && !miembros.isEmpty()) { %>
+                                    <div style="margin-left: auto;">
+                                        <a href="ComunidadServlet?action=members&id=<%= comunidad.getIdComunidad() %>" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            Ver todos (<%= totalMiembros %>)
+                                        </a>
+                                    </div>
+                                     <% } %>
+                                </div>
+
+                                <% if (miembros != null && !miembros.isEmpty()) { %>
+                                    <div class="members-grid">
+                                        <% 
+                                            int maxMiembros = Math.min(8, miembros.size());
+                                            for (int i = 0; i < maxMiembros; i++) {
+                                                ComunidadMiembro miembro = miembros.get(i);
+                                        %>
+                                            <div class="member-item">
+                                                <div class="member-avatar">
+                                                    <%= miembro.getNombreUsuario() != null ? 
+                                                        miembro.getNombreUsuario().substring(0,1).toUpperCase() : "U" %>
+                                                </div>
+                                                <div class="member-info">
+                                                    <h6><%= miembro.getNombreUsuario() != null ? 
+                                                            miembro.getNombreUsuario() : "Usuario" %></h6>
+                                                    <span class="member-role role-<%= miembro.getRol() %>">
+                                                        <% if ("admin".equals(miembro.getRol())) { %>
+                                                            <i class="fas fa-shield-alt"></i>Admin
+                                                        <% } else if ("creador".equals(miembro.getRol())) { %>
+                                                            <i class="fas fa-crown"></i>Creador
+                                                        <% } else { %>
+                                                            <i class="fas fa-user"></i>Miembro
+                                                        <% } %>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                <% } else { %>
+                                    <div class="no-posts">
+                                        <i class="fas fa-users"></i>
+                                        <h4>No hay miembros para mostrar</h4>
+                                        <p>Los miembros aparecerán aquí cuando se una a la comunidad.</p>
+                                    </div>
+                                <% } %>
+                            </div>
+
+                            </div>
+                            <% } else { %>
+                            <!-- Error: Comunidad no encontrada -->
+                            <div class="no-posts" style="padding: 80px 20px;">
+                                <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
+                                <h3>Comunidad no encontrada</h3>
+                                <p>La comunidad que buscas no existe o no tienes permisos para verla.</p>
+                                <a href="ComunidadServlet" class="btn btn-primary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Comunidades
+                                </a>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <!-- SIDEBAR DERECHA CON MIEMBROS -->
+ 
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODALES EXACTOS DE HOME.JSP -->
+
+    <!-- Modal para nueva publicación -->
+    <div class="modal fade" id="postModal" tabindex="-1" role="dialog" aria-labelledby="postModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="postModalLabel">
+                        <i class="fas fa-edit"></i> Nueva Publicación en <%= comunidad != null ? comunidad.getNombre() : "Comunidad" %>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Formulario EXACTO DE HOME.JSP -->
+                    <form id="formCrearPost" enctype="multipart/form-data">
+                        <input type="hidden" name="idUsuario" value="<%= usuarioActual != null ? usuarioActual.getId() : "" %>">
+                        
+                        <input type="hidden" id="idComunidad" value="<%= comunidad != null ? comunidad.getIdComunidad() : "" %>">
+                        <div class="form-group">
+                            <label for="postContent">¿Qué quieres compartir?</label>
+                            <textarea class="form-control" id="postContent" name="contenido" rows="4" 
+                                      placeholder="Comparte información relevante con la comunidad..." 
+                                      maxlength="999" required></textarea>
+                            <small class="form-text text-muted">
+                                <span id="contadorCaracteres">0 / 999</span> caracteres
+                            </small>
+                        </div>
+
+                            <div class="form-group text-left">
+                                <div class="upload-btn-container">
+                                    <button type="button" class="btn btn-primary" id="btnSubirImagen">
+                                        <i class="fas fa-image"></i> Subir Imagen
+                                    </button>
+                                    <input type="file" id="inputImagen" name="imagen" accept="image/*" style="display:none">
+                                </div>
+                            </div>
+
+                            <!-- Contenedor para preview de imagen (sin cambios) -->
+                            <div class="image-preview-container" id="imagePreviewContainer">
+                                <button type="button" class="remove-image-btn" id="removeImageBtn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <img id="imagePreview" class="image-preview" src="" alt="Preview">
+                            </div>
+
+                            <% if(tienePrivilegios && comunidad.isUsuarioEsAdmin()) { %>
+                                <div class="form-group form-check">
+                                    <input type="checkbox" class="form-check-input" id="receiveMoney" name="permiteDonacion">
+                                    <label class="form-check-label" for="receiveMoney">
+                                        <i class="fas fa-gift"></i> ¿Recibir donaciones?
+                                    </label>
+                                    <small class="form-text text-muted">
+                                        Solo usuarios privilegiados pueden recibir donaciones
+                                    </small>
+                                </div>
+                            <% } else { %>
+                                <div class="form-group form-check privilege-tooltip">
+                                    <input type="checkbox" class="form-check-input" id="receiveMoney" disabled>
+                                    <label class="form-check-label" for="receiveMoney">
+                                        <i class="fas fa-gift"></i> ¿Recibir donaciones?
+                                    </label>
+                                    <span class="tooltip-text">
+                                        Necesitas ser un usuario privilegiado para habilitar esta opción. 
+                                        Los administradores de comunidades pueden auto-aprobar publicaciones pero no recibir donaciones.
+                                    </span>
+                                </div>
+                            <% } %>
+                    </form>
+
+                    <!-- Loading spinner EXACTO DE HOME.JSP -->
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Publicando...</span>
+                        </div>
+                        <p class="mt-2">Publicando tu post...</p>
+                    </div>
+                    
+                    <!-- Mensaje de éxito EXACTO DE HOME.JSP -->
+                    <% if(tienePrivilegios) { %>
+                        <div class="success-message" id="successMessage" style="display: none;">
+                            <i class="fas fa-check-circle fa-3x text-success"></i>
+                            <p class="mt-2">¡Post publicado exitosamente!</p>
+                        </div>
+                    <% } else { %>
+                        <div class="warning-message" id="successMessage" style="display: none;">
+                            <i class="fas fa-check-circle fa-3x text-warning"></i>
+                            <p class="mt-2">¡Post Esperando Ser Aprobado!</p>
+                        </div>
+                    <% } %>
+                </div>
+
+                <div class="modal-footer d-flex justify-content-center">
+                    <button type="button" class="btn btn-secondary me-3" data-dismiss="modal">
+                        <i class="fas fa-times-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success ms-3" id="btnPublicar">
+                        <i class="fas fa-check-circle"></i> Publicar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Donación EXACTO DE HOME.JSP -->
+    <div class="modal fade" id="donationModal" tabindex="-1" role="dialog" aria-labelledby="donationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="donationModalLabel">
+                        <i class="fas fa-gift text-primary"></i> Enviar un regalo
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="formDonacion">
+                        <!-- IDs ocultos para el JavaScript -->
+                        <input type="hidden" id="donationPostId" name="idPublicacion" value="">
+                        <input type="hidden" id="donationUserId" name="idUsuario" value="">
+
+                        <!-- Información del usuario destinatario -->
+                        <div class="d-flex mb-3" id="donationUserInfo">
+                            <img src="assets/images/avatars/default.png" alt="User Avatar" class="rounded-circle" width="50" height="50" id="donationUserAvatar">
+                            <div class="ms-3">
+                                <p class="font-weight-bold mb-0 creator-name">Usuario</p>
+                                <p class="mb-0" id="donationUserHandle">@usuario</p>
+                                <p class="mb-0 text-muted">Enviar un regalo a este usuario</p>
+                            </div>
+                        </div>
+
+                        <!-- Monto de donación -->
+                        <div class="form-group mb-3">
+                            <label for="donationAmount" class="form-label">
+                                <i class="fas fa-dollar-sign text-success"></i> Monto de la donación (S/)
+                            </label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">S/</span>
+                                </div>
+                                <input type="number" class="form-control" id="donationAmount" name="cantidad" 
+                                       value="0" min="1" max="10000" step="0.01" required>
+                            </div>
+                            <div id="amountError" class="text-danger small mt-1" style="display: none;"></div>
+                            <small class="form-text text-muted">Mínimo S/ 1.00 - Máximo S/ 10,000</small>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" id="processDonationBtn" disabled>
+                        <i class="fas fa-heart"></i> Donar con Mercado Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <jsp:include page="/components/js_imports.jsp" />
+    
+        <script>
+            $(document).ready(function() {
+                // Inicializar funcionalidades
+                initializePostCreation();
+                checkServerMessages();
+                initializeLikeButtons();
+                console.log('🚀 Home cargado con <%= totalPublicaciones != null ? totalPublicaciones : 0 %> publicaciones');
+            });
+
+            function checkServerMessages() {
+                <% if (request.getAttribute("errorMessagePayment") != null) { %>
+                    showPaymentResult('error', '<%= request.getAttribute("errorMessagePayment") %>');
+                <% } %>
+
+                <% if (request.getAttribute("successMessagePayment") != null) { %>
+                    showPaymentResult('success', '<%= request.getAttribute("successMessagePayment") %>');
+                <% } %>
+
+                <% if (request.getAttribute("warningMessagePayment") != null) { %>
+                    showPaymentResult('warning', '<%= request.getAttribute("warningMessagePayment") %>');
+                <% } %>
+            }
+            
+            function showPaymentResult(type, message) {
+                const modal = $('#paymentResultModal');
+                const modalContent = modal.find('.payment-result-modal');
+                const icon = modal.find('.payment-icon');
+                const title = modal.find('.modal-title');
+                const messageDiv = modal.find('.payment-message p');
+
+                // Limpiar clases
+                modalContent.removeClass('success error warning');
+
+                // Configurar según tipo
+                switch(type) {
+                    case 'success':
+                        modalContent.addClass('success');
+                        icon.removeClass().addClass('fas fa-heart payment-icon');
+                        title.text('¡Donación Exitosa!');
+                        setTimeout(() => modal.modal('hide'), 8000);
+                        break;
+                    case 'error':
+                        modalContent.addClass('error');
+                        icon.removeClass().addClass('fas fa-exclamation-triangle payment-icon');
+                        title.text('Error en el Pago');
+                        break;
+                    case 'warning':
+                        modalContent.addClass('warning');
+                        icon.removeClass().addClass('fas fa-clock payment-icon');
+                        title.text('Pago en Proceso');
+                        setTimeout(() => modal.modal('hide'), 6000);
+                        break;
+                }
+
+                messageDiv.html(message);
+                modal.modal('show');
+            }
+            // ========== CREACIÓN DE PUBLICACIONES ==========
+            function initializePostCreation() {
+                let selectedFile = null;
+
+                // Contador de caracteres
+                $('#postContent').on('input', function() {
+                    const currentLength = $(this).val().length;
+                    const maxLength = 999;
+                    $('#contadorCaracteres').text(currentLength + ' / ' + maxLength);
+
+                    if (currentLength > maxLength) {
+                        $(this).addClass('is-invalid');
+                        $('#contadorCaracteres').addClass('text-danger');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                        $('#contadorCaracteres').removeClass('text-danger');
+                    }
+                });
+
+                // Abrir selector de archivos
+                $('#btnSubirImagen').click(function() {
+                    $('#inputImagen').click();
+                });
+
+                // Preview de imagen al seleccionar archivo
+                $('#inputImagen').change(function(e) {
+                    const file = e.target.files[0];
+
+                    if (file) {
+                        // Validar tipo de archivo
+                        if (!file.type.startsWith('image/')) {
+                            alert('Por favor selecciona un archivo de imagen válido.');
+                            return;
+                        }
+
+                        // Validar tamaño (máximo 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('La imagen es muy grande. Máximo 5MB permitido.');
+                            return;
+                        }
+
+                        selectedFile = file;
+
+                        // Crear preview
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            $('#imagePreview').attr('src', e.target.result);
+                            $('#imagePreviewContainer').fadeIn();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                // Remover imagen
+                $('#removeImageBtn').click(function() {
+                    selectedFile = null;
+                    $('#inputImagen').val('');
+                    $('#imagePreviewContainer').fadeOut();
+                });
+
+                // Publicar post con Ajax
+                $('#btnPublicar').click(function() {
+                    const texto = $('#postContent').val().trim();
+
+                    // Validaciones
+                    if (texto === '') {
+                        alert('Por favor escribe algo antes de publicar.');
+                        $('#postContent').focus();
+                        return;
+                    }
+
+                    if (texto.length > 999) {
+                        alert('El texto es muy largo. Máximo 999 caracteres.');
+                        return;
+                    }
+
+                    // Mostrar loading
+                    $('.modal-body form').hide();
+                    $('#loadingSpinner').show();
+                    $(this).prop('disabled', true);
+
+                    // Crear FormData para enviar archivo
+                    const formData = new FormData();
+                    formData.append('action', 'createPost');
+                    formData.append('idUsuario', $('input[name="idUsuario"]').val());
+                    formData.append('texto', texto);
+                    formData.append('permiteDonacion', $('#receiveMoney').is(':checked') ? '1' : '0');
+                    formData.append('idComunidad', $('#idComunidad').val());
+
+                    if (selectedFile) {
+                        formData.append('imagen', selectedFile);
+                    }
+
+                    // Enviar con Ajax
+                    $.ajax({
+                        url: 'HomeServlet', // Cambia por tu URL
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            console.log('Respuesta del servidor:', response);
+
+                            // Mostrar mensaje de éxito
+                            $('#loadingSpinner').hide();
+                            $('#successMessage').show();
+
+                            // Cerrar modal después de 4 segundos
+                            setTimeout(function() {
+                                $('#postModal').modal('hide');
+
+                                // Aquí puedes recargar la página o actualizar la lista de posts
+                                window.location.reload();
+
+                            }, 4000);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error al publicar:', error);
+
+                            $('#loadingSpinner').hide();
+                            $('.modal-body form').show();
+                            $('#btnPublicar').prop('disabled', false);
+
+                            // Mostrar error específico si está disponible
+                            let errorMessage = 'Error al publicar el post. Intenta de nuevo.';
+
+                            try {
+                                const errorResponse = JSON.parse(xhr.responseText);
+                                if (errorResponse.message) {
+                                    errorMessage = errorResponse.message;
+                                }
+                            } catch (e) {
+                                // Si no es JSON, usar mensaje por defecto
+                            }
+
+                            alert(errorMessage);
+                        }
+                    });
+                    $('#postContent').val("");
+                });
+
+                // Limpiar modal al cerrarse
+                $('#postModal').on('hidden.bs.modal', function() {
+                    // Resetear formulario
+                    $('#formCrearPost')[0].reset();
+                    $('#contadorCaracteres').text('0 / 999');
+                    $('#contadorCaracteres').removeClass('text-danger');
+                    $('#postContent').removeClass('is-invalid');
+
+                    // Limpiar imagen
+                    selectedFile = null;
+                    $('#imagePreviewContainer').hide();
+
+                    // Resetear estados
+                    $('.modal-body form').show();
+                    $('#loadingSpinner').hide();
+                    $('#successMessage').hide();
+                    $('#btnPublicar').prop('disabled', false);
+                });
+            }
+
+            // ========== SISTEMA DE LIKES ==========
+            function toggleLike(idPublicacion) {
+                var likeBtn = $('#likeBtn_' + idPublicacion);
+                var originalText = likeBtn.html();
+                
+                // Mostrar loading
+                likeBtn.html('<i class="fas fa-spinner fa-spin"></i> ...');
+                likeBtn.prop('disabled', true);
+                
+                $.ajax({
+                    url: 'HomeServlet',
+                    type: 'POST',
+                    data: {
+                        action: 'toggleLike',
+                        idPublicacion: idPublicacion
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Actualizar contador
+                            $('#likeCount_' + idPublicacion).text(response.newCount);
+                            
+                            // Actualizar estilo del botón
+                            if (response.userLiked) {
+                                likeBtn.addClass('liked');
+                                likeBtn.html('<i class="fas fa-heart"></i> <span id="likeCount_' + idPublicacion + '">' + response.newCount + '</span>');
+                                showNotification("Like Agregado", 'success');
+                            } else {
+                                likeBtn.removeClass('liked');
+                                likeBtn.html('<i class="far fa-heart"></i> <span id="likeCount_' + idPublicacion + '">' + response.newCount + '</span>');
+                                showNotification("Like Quitado", 'success');
+                            }
+                                                        
+                        } else {
+                            showNotification(response.message, 'error');
+                            likeBtn.html(originalText);
+                        }
+                    },
+                    error: function() {
+                        showNotification('Error de conexión', 'error');
+                        likeBtn.html(originalText);
+                    },
+                    complete: function() {
+                        likeBtn.prop('disabled', false);
+                    }
+                });
+            }
+
+            // Cargar estado de likes del usuario
+            function initializeLikeButtons() {
+                <% if (usuarioActual != null && publicaciones != null) { %>
+                    <% for (Publicacion pub : publicaciones) { %>
+                        var likeBtn = $('#likeBtn_<%= pub.getIdPublicacion() %>');
+
+                        <% if (pub.isUsuarioDioLike()) { %>
+                            likeBtn.addClass('liked');
+                            likeBtn.find('i').removeClass('far').addClass('fas');
+                        <% } else { %>
+                            likeBtn.removeClass('liked');  
+                            likeBtn.find('i').removeClass('fas').addClass('far');
+                        <% } %>
+                    <% } %>
+                <% } %>
+            }
+
+            // ========== SISTEMA DE COMENTARIOS ==========
+            function toggleComments(idPublicacion) {
+                var commentsSection = $('#commentsSection_' + idPublicacion);
+                
+                if (commentsSection.is(':visible')) {
+                    commentsSection.slideUp();
+                } else {
+                    commentsSection.slideDown();
+                }
+            }
+
+            function addComment(idPublicacion) {
+               var commentInput = $('#commentInput_' + idPublicacion);
+               var contenido = commentInput.val().trim();
+
+               if (contenido === '') {
+                   showError('Por favor escribe un comentario');
+                   return;
+               }
+
+               if (contenido.length > 500) {
+                   showError('El comentario no puede exceder 500 caracteres');
+                   return;
+               }
+
+               // Deshabilitar input mientras se procesa
+               commentInput.prop('disabled', true);
+
+               // Mostrar indicador de carga en el botón
+               var sendButton = commentInput.next('button');
+               var originalButtonContent = sendButton.html();
+               sendButton.html('<i class="fas fa-spinner fa-spin"></i>');
+               sendButton.prop('disabled', true);
+
+               $.ajax({
+                   url: 'HomeServlet',
+                   type: 'POST',
+                   data: {
+                       action: 'addComment',
+                       idPublicacion: idPublicacion,
+                       contenido: contenido
+                   },
+                   dataType: 'json',
+                   success: function(response) {
+                       console.log('📊 Respuesta completa del servidor:', response);
+
+                       if (response.success && response.comment) {
+                           var comment = response.comment;
+
+                           // Log para debugging
+                           console.log('💬 Datos del comentario recibido:', comment);
+
+                           // Extraer y validar datos - CORREGIDO
+                           var avatarSrc = (comment.avatar && comment.avatar !== 'null' && comment.avatar.trim() !== '') 
+                               ? comment.avatar 
+                               : 'assets/images/avatars/default.png';
+
+                           var nombreUsuario = comment.nombreUsuario || comment.nombre_usuario || 'Usuario';
+
+                           // CORREGIR: Usar el contenido original enviado si no viene en la respuesta
+                           var contenidoEscapado = comment.contenido ? escapeHtml(comment.contenido) : escapeHtml(contenido);
+
+                           var horaComentario = comment.hora || comment.fecha_comentario || 'ahora';
+
+                           var idComentario = comment.id || comment.id_comentario || 0;
+
+                           // Para usar en atributos JS
+                           var contenidoParaJS = escapeForJS(contenidoEscapado);
+                           var nombreUsuarioParaJS = escapeForJS(nombreUsuario);
+
+                           console.log('🔧 Datos procesados:', {
+                               avatar: avatarSrc,
+                               nombre: nombreUsuario,
+                               contenido: contenidoEscapado,
+                               hora: horaComentario,
+                               id: idComentario
+                           });
+
+                           // HTML del nuevo comentario
+                            var nuevoComentarioHTML = 
+                                '<div class="comment" data-comment-id="' + idComentario + '" ' +
+                                     'data-author-name="' + nombreUsuario + '" ' +
+                                     'style="display: none;">' +
+                                    '<img src="' + avatarSrc + '" alt="User Avatar" ' +
+                                         'onerror="this.src=\'assets/images/avatars/default.png\'" ' +
+                                         'style="width: 35px; height: 35px; border-radius: 50%; margin-right: 10px; object-fit: cover;">' +
+                                    '<div class="comment-content">' +
+                                        '<div class="comment-text">' +
+                                            '<strong>@' + nombreUsuario + '</strong>: ' + contenidoEscapado +
+                                        '</div>' +
+                                        '<div class="comment-info">' +
+                                            '<span>' + horaComentario + '</span>' +
+                                            '<div class="comment-actions" style="float: right;">' +
+                                                '<button class="btn btn-sm btn-outline-primary" ' +
+                                                        'onclick="editarComentario(' + idComentario + ', \'' + contenidoParaJS + '\')" ' +
+                                                        'title="Editar comentario">' +
+                                                    '<i class="fas fa-edit"></i>' +
+                                                '</button>' +
+                                                '<button class="btn btn-sm btn-outline-danger" ' +
+                                                        'onclick="eliminarComentario(' + idComentario + ', \'' + nombreUsuarioParaJS + '\')" ' +
+                                                        'title="Eliminar comentario">' +
+                                                    '<i class="fas fa-trash"></i>' +
+                                                '</button>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>';
+
+                           console.log('🏗️ HTML generado:', nuevoComentarioHTML);
+
+                           // Agregar el comentario al contenedor
+                           var commentsList = $('#commentsList_' + idPublicacion);
+                           commentsList.append(nuevoComentarioHTML);
+
+                           // Mostrar el comentario con animación
+                           commentsList.find('.comment:last').slideDown();
+
+                           // Actualizar contador
+                           if (response.newCount) {
+                               $('#commentCount_' + idPublicacion).text(response.newCount);
+                           }
+
+                           // Limpiar y habilitar input
+                           commentInput.val('').prop('disabled', false).focus();
+
+                           // Auto-scroll al nuevo comentario
+                           var commentsSection = $('#commentsSection_' + idPublicacion);
+                           setTimeout(function() {
+                               commentsSection.animate({
+                                   scrollTop: commentsSection[0].scrollHeight
+                               }, 300);
+                           }, 100);
+
+                           showSuccess('Comentario agregado exitosamente');
+
+                       } else {
+                           console.error('❌ Error en la respuesta:', response.message || 'Error desconocido');
+                           showError(response.message || 'Error al agregar comentario');
+                       }
+                   },
+                   error: function(xhr, status, error) {
+                       console.error('❌ Error AJAX:', error);
+                       console.error('📄 Respuesta del servidor:', xhr.responseText);
+                       showError('Error de conexión al agregar comentario');
+                   },
+                   complete: function() {
+                       // Rehabilitar controles
+                       commentInput.prop('disabled', false);
+                       sendButton.html(originalButtonContent);
+                       sendButton.prop('disabled', false);
+                       setTimeout(function() { commentInput.focus(); }, 100);
+                   }
+               });
+           }
+            
+            function handleCommentKeyPress(event, idPublicacion) {
+                if (event.key === 'Enter') {
+                    addComment(idPublicacion);
+                }
+            }
+
+
+            // ========== FUNCIONES DE UTILIDAD ==========
+            function showNotification(message, type, duration) {
+                duration = duration || 4000; // Default 4 segundos
+
+                // Configuración por tipo
+                var config = {
+                    success: {
+                        icon: 'fa-check-circle',
+                        bgColor: '#28a745',
+                        textColor: '#fff',
+                        title: '¡Éxito!'
+                    },
+                    error: {
+                        icon: 'fa-exclamation-triangle',
+                        bgColor: '#dc3545',
+                        textColor: '#fff',
+                        title: 'Error'
+                    },
+                    warning: {
+                        icon: 'fa-exclamation-circle',
+                        bgColor: '#ffc107',
+                        textColor: '#212529',
+                        title: 'Atención'
+                    },
+                    info: {
+                        icon: 'fa-info-circle',
+                        bgColor: '#17a2b8',
+                        textColor: '#fff',
+                        title: 'Información'
+                    }
+                };
+
+                var setting = config[type] || config.info;
+                var toastId = 'toast-' + Date.now();
+
+                // Crear contenedor de toasts si no existe
+                if ($('#toast-container').length === 0) {
+                    $('body').append(
+                        '<div id="toast-container" style="' +
+                            'position: fixed;' +
+                            'top: 20px;' +
+                            'right: 20px;' +
+                            'z-index: 9999;' +
+                            'max-width: 350px;' +
+                        '"></div>'
+                    );
+                }
+
+                // Crear el toast
+                var toast = 
+                    '<div id="' + toastId + '" class="toast-notification" style="' +
+                        'background: ' + setting.bgColor + ';' +
+                        'color: ' + setting.textColor + ';' +
+                        'border-radius: 8px;' +
+                        'box-shadow: 0 4px 12px rgba(0,0,0,0.15);' +
+                        'margin-bottom: 10px;' +
+                        'overflow: hidden;' +
+                        'transform: translateX(100%);' +
+                        'transition: all 0.3s ease;' +
+                        'position: relative;' +
+                    '">' +
+                        '<!-- Barra de progreso -->' +
+                        '<div class="toast-progress" style="' +
+                            'position: absolute;' +
+                            'top: 0;' +
+                            'left: 0;' +
+                            'height: 3px;' +
+                            'background: rgba(255,255,255,0.3);' +
+                            'width: 100%;' +
+                            'transform-origin: left;' +
+                            'animation: toastProgress ' + duration + 'ms linear forwards;' +
+                        '"></div>' +
+
+                        '<!-- Contenido -->' +
+                        '<div style="' +
+                            'padding: 16px;' +
+                            'display: flex;' +
+                            'align-items: center;' +
+                            'gap: 12px;' +
+                        '">' +
+                            '<!-- Icono -->' +
+                            '<div style="' +
+                                'width: 40px;' +
+                                'height: 40px;' +
+                                'border-radius: 50%;' +
+                                'background: rgba(255,255,255,0.2);' +
+                                'display: flex;' +
+                                'align-items: center;' +
+                                'justify-content: center;' +
+                                'flex-shrink: 0;' +
+                            '">' +
+                                '<i class="fas ' + setting.icon + '" style="font-size: 18px;"></i>' +
+                            '</div>' +
+
+                            '<!-- Texto -->' +
+                            '<div style="flex: 1; min-width: 0;">' +
+                                '<div style="' +
+                                    'font-weight: 600;' +
+                                    'font-size: 14px;' +
+                                    'margin-bottom: 2px;' +
+                                '">' + setting.title + '</div>' +
+                                '<div style="' +
+                                    'font-size: 13px;' +
+                                    'opacity: 0.9;' +
+                                    'word-wrap: break-word;' +
+                                '">' + message + '</div>' +
+                            '</div>' +
+
+                            '<!-- Botón cerrar -->' +
+                            '<button class="toast-close" style="' +
+                                'background: none;' +
+                                'border: none;' +
+                                'color: inherit;' +
+                                'font-size: 18px;' +
+                                'opacity: 0.7;' +
+                                'cursor: pointer;' +
+                                'padding: 4px;' +
+                                'border-radius: 4px;' +
+                                'transition: opacity 0.2s ease;' +
+                            '" onclick="closeToast(\'' + toastId + '\')">' +
+                                '<i class="fas fa-times"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+
+                // Agregar al contenedor
+                $('#toast-container').append(toast);
+
+                // Animar entrada
+                setTimeout(function() {
+                    $('#' + toastId).css('transform', 'translateX(0)');
+                }, 10);
+
+                // Auto-cerrar
+                setTimeout(function() {
+                    closeToast(toastId);
+                }, duration);
+
+                // Agregar hover para pausar
+                $('#' + toastId)
+                    .on('mouseenter', function() {
+                        $(this).find('.toast-progress').css('animation-play-state', 'paused');
+                    })
+                    .on('mouseleave', function() {
+                        $(this).find('.toast-progress').css('animation-play-state', 'running');
+                    });
+            }
+
+            /**
+             * Cerrar toast específico
+             */
+            function closeToast(toastId) {
+                var toast = $('#' + toastId);
+                if (toast.length) {
+                    toast.css({
+                        'transform': 'translateX(100%)',
+                        'opacity': '0'
+                    });
+
+                    setTimeout(function() {
+                        toast.remove();
+
+                        // Remover contenedor si está vacío
+                        if ($('#toast-container .toast-notification').length === 0) {
+                            $('#toast-container').remove();
+                        }
+                    }, 300);
+                }
+            }
+
+            /**
+             * Limpiar todos los toasts
+             */
+            function clearAllToasts() {
+                $('.toast-notification').each(function() {
+                    var id = $(this).attr('id');
+                    if (id) {
+                        closeToast(id);
+                    }
+                });
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
+            function escapeForJS(text) {
+                if (!text) return '';
+                return text.replace(/\\/g, '\\\\')
+                           .replace(/'/g, "\\'")
+                           .replace(/"/g, '\\"')
+                           .replace(/\n/g, '\\n')
+                           .replace(/\r/g, '\\r');
+            }
+
+
+            function editarComentario(idComentario, contenidoActual) {
+                console.log('🔧 Iniciando edición de comentario:', idComentario);
+
+                // Encontrar el comentario en el DOM - SIN template literals
+                var commentElement = $('[data-comment-id="' + idComentario + '"]');
+
+                if (commentElement.length === 0) {
+                    console.error('❌ No se encontró el comentario con ID:', idComentario);
+                    return;
+                }
+
+                var commentTextElement = commentElement.find('.comment-text');
+                var commentActionsElement = commentElement.find('.comment-actions');
+
+                console.log('✅ Elementos encontrados:', {
+                    comment: commentElement.length,
+                    text: commentTextElement.length,
+                    actions: commentActionsElement.length
+                });
+
+                // Validar contenido actual y escapar para HTML
+                var contenidoParaTextarea = contenidoActual || '';
+                // Desescapar para el textarea (convertir &amp; → &, etc.)
+                contenidoParaTextarea = unescapeHtml(contenidoParaTextarea);
+
+                // Guardar el contenido original para restaurar si se cancela
+                var contenidoOriginal = commentTextElement.html();
+
+                // Crear formulario de edición - Estructura mejorada
+                var editForm = '<div class="edit-comment-form">' +
+                    '<div class="mb-2">' +
+                        '<textarea class="form-control edit-comment-input" maxlength="500" rows="3" placeholder="Edita tu comentario...">' + 
+                        escapeHtml(contenidoParaTextarea) + 
+                        '</textarea>' +
+                    '</div>' +
+                    '<div class="d-flex justify-content-between align-items-center">' +
+                        '<small class="text-muted">' +
+                            '<span class="edit-char-count">0</span>/500 caracteres' +
+                        '</small>' +
+                        '<div class="btn-group">' +
+                            '<button class="btn btn-success btn-sm save-edit-btn" type="button">' +
+                                '<i class="fas fa-check"></i> Guardar' +
+                            '</button>' +
+                            '<button class="btn btn-secondary btn-sm cancel-edit-btn" type="button">' +
+                                '<i class="fas fa-times"></i> Cancelar' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+                console.log('📝 HTML del formulario a insertar:');
+                console.log(editForm);
+
+                commentTextElement.html(editForm);
+                commentActionsElement.hide();
+
+                console.log('📝 Formulario insertado en el DOM');
+
+                var textarea = commentTextElement.find('.edit-comment-input');
+                var saveBtn = commentTextElement.find('.save-edit-btn');
+                var cancelBtn = commentTextElement.find('.cancel-edit-btn');
+                var charCountElement = commentTextElement.find('.edit-char-count');
+
+                console.log('🔍 Elementos del formulario encontrados:', {
+                    textarea: textarea.length,
+                    saveBtn: saveBtn.length,
+                    cancelBtn: cancelBtn.length,
+                    charCount: charCountElement.length
+                });
+
+                if (textarea.length === 0) {
+                    console.error('❌ ERROR: Textarea no encontrado');
+                    console.log('🔍 HTML actual del comentario:', commentTextElement.html());
+                    console.log('🔍 Selector usado:', '.edit-comment-input');
+
+                    var anyTextarea = commentTextElement.find('textarea');
+                    console.log('🔍 Cualquier textarea encontrado:', anyTextarea.length);
+
+                    return;
+                }
+
+                // Función para guardar
+                function guardarEdicion() {
+                    console.log('💾 Guardando edición...');
+                    var nuevoContenido = textarea.val().trim();
+
+                    console.log('📝 Contenido a guardar:', {
+                        original: textarea.val(),
+                        trimmed: nuevoContenido,
+                        length: nuevoContenido.length
+                    });
+
+                    if (nuevoContenido === '') {
+                        alert('El comentario no puede estar vacío');
+                        textarea.focus();
+                        return;
+                    }
+
+                    if (nuevoContenido.length > 500) {
+                        alert('El comentario no puede exceder 500 caracteres');
+                        return;
+                    }
+
+                    // Verificar que realmente hay contenido
+                    if (nuevoContenido === contenidoParaTextarea.trim()) {
+                        console.log('📝 Contenido no cambió, cancelando edición');
+                        cancelarEdicion();
+                        return;
+                    }
+
+                    // Deshabilitar controles mientras se guarda
+                    textarea.prop('disabled', true);
+                    saveBtn.prop('disabled', true);
+                    cancelBtn.prop('disabled', true);
+
+                    // Mostrar indicador de carga
+                    saveBtn.html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+                    console.log('📤 Enviando al servidor:', {
+                        idComentario: idComentario,
+                        contenido: nuevoContenido
+                    });
+
+                    // Llamar a función de guardar en el servidor
+                    guardarEdicionComentario(idComentario, nuevoContenido, function(success, message) {
+                        if (success) {
+                            // Restaurar el texto normal (no el formulario)
+                            var nombreUsuario = commentElement.attr('data-author-name') || 'Usuario';
+                            commentTextElement.html('<strong>@' + nombreUsuario + '</strong>: ' + escapeHtml(nuevoContenido));
+                            commentActionsElement.show();
+                            console.log('✅ Comentario guardado y vista restaurada');
+
+                            // Mostrar notificación de éxito
+                            if (typeof showNotification === 'function') {
+                                showNotification('Comentario actualizado', 'success', 2000);
+                            }
+                        } else {
+                            // Restaurar botón y re-habilitar controles si falla
+                            saveBtn.html('<i class="fas fa-check"></i> Guardar');
+                            textarea.prop('disabled', false);
+                            saveBtn.prop('disabled', false);
+                            cancelBtn.prop('disabled', false);
+                            textarea.focus();
+
+                            // Mostrar error específico
+                            var errorMsg = message || 'Error al guardar el comentario';
+                            alert('Error: ' + errorMsg);
+                            console.error('❌ Error al guardar:', errorMsg);
+                        }
+                    });
+                }
+
+                // Función para cancelar
+                function cancelarEdicion() {
+                    console.log('❌ Cancelando edición...');
+                    commentTextElement.html(contenidoOriginal);
+                    commentActionsElement.show();
+                }
+
+                // Agregar eventos - usando .off() primero para evitar duplicados
+                saveBtn.off('click').on('click', guardarEdicion);
+                cancelBtn.off('click').on('click', cancelarEdicion);
+
+                // Enfocar textarea inmediatamente
+                textarea.focus();
+
+                // Posicionar cursor al final
+                setTimeout(function() {
+                    try {
+                        var textareaElement = textarea[0];
+                        if (textareaElement && typeof textareaElement.setSelectionRange === 'function') {
+                            var textLength = textarea.val().length;
+                            textareaElement.setSelectionRange(textLength, textLength);
+                            console.log('✅ Cursor posicionado al final');
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error al posicionar cursor:', e.message);
+                    }
+                }, 50);
+
+                // Contador de caracteres
+                textarea.off('input').on('input', function() {
+                    var charCount = $(this).val().length;
+                    charCountElement.text(charCount);
+
+                    if (charCount > 500) {
+                        $(this).val($(this).val().substring(0, 500));
+                        charCountElement.text(500);
+                    }
+                });
+
+                // Trigger inicial del contador
+                textarea.trigger('input');
+
+                // Atajos de teclado
+                textarea.off('keydown').on('keydown', function(e) {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        e.preventDefault();
+                        guardarEdicion();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelarEdicion();
+                    }
+                });
+
+                console.log('✅ Edición configurada correctamente');
+            }
+
+
+            function guardarEdicionComentario(idComentario, nuevoContenido, callback) {
+                console.log('🌐 Enviando AJAX para editar comentario:', {
+                    id: idComentario,
+                    contenido: nuevoContenido,
+                    length: nuevoContenido.length
+                });
+
+                // Aquí harías tu AJAX call al servidor
+                $.ajax({
+                    url: 'HomeServlet',
+                    type: 'POST',
+                    data: {
+                        action: 'editComment',
+                        idComentario: idComentario,
+                        nuevoContenido: nuevoContenido,
+                        contenido: nuevoContenido  // Por si tu servlet espera 'contenido'
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('📦 Respuesta del servidor:', response);
+
+                        if (response.success) {
+                            console.log('✅ Comentario guardado en servidor');
+                            callback(true, response.message);
+                        } else {
+                            console.error('❌ Error del servidor:', response.message);
+                            callback(false, response.message || 'Error desconocido');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('❌ Error AJAX:', {
+                            status: status,
+                            error: error,
+                            responseText: xhr.responseText,
+                            statusCode: xhr.status
+                        });
+
+                        var errorMessage = 'Error de conexión al guardar el comentario';
+                        if (xhr.responseText) {
+                            try {
+                                var errorResponse = JSON.parse(xhr.responseText);
+                                errorMessage = errorResponse.message || errorMessage;
+                            } catch (e) {
+                                console.log('No se pudo parsear la respuesta de error');
+                            }
+                        }
+
+                        callback(false, errorMessage);
+                    }
+                });
+            }
+            function unescapeHtml(text) {
+                if (!text) return '';
+                var map = {
+                    '&amp;': '&',
+                    '&lt;': '<',
+                    '&gt;': '>',
+                    '&quot;': '"',
+                    '&#039;': "'"
+                };
+                return text.replace(/&amp;|&lt;|&gt;|&quot;|&#039;/g, function(m) { return map[m]; });
+            }
+            // Función para cancelar la edición
+            function cancelarEdicionComentario(idComentario, contenidoOriginal) {
+                var commentElement = $(`[data-comment-id="${idComentario}"]`);
+                var commentTextElement = commentElement.find('.comment-text');
+                var commentActionsElement = commentElement.find('.comment-actions');
+
+                // Restaurar contenido original
+                var nombreAutor = 'Usuario';
+                if (commentElement.data('author-name')) {
+                    nombreAutor = commentElement.data('author-name');
+                }
+
+                var contenidoEscapado = '';
+                if (contenidoOriginal) {
+                    contenidoEscapado = escapeHtml(contenidoOriginal);
+                }
+
+                // Restaurar contenido original
+                var originalHTML = `
+                    <strong>${nombreAutor}</strong>: ${contenidoEscapado}
+                `;
+
+                commentTextElement.html(originalHTML);
+                commentActionsElement.show();
+            }
+
+
+            function eliminarComentario(idComentario, nombreAutor) {
+                // DEBUG: Verificar qué parámetros llegan
+                console.log('🗑️ Eliminando comentario:', {
+                    idComentario: idComentario,
+                    nombreAutor: nombreAutor,
+                    tipoNombre: typeof nombreAutor
+                });
+
+                // Validar parámetros
+                if (!idComentario || idComentario <= 0) {
+                    showError('ID de comentario inválido');
+                    return;
+                }
+
+                var nombreParaMostrar = 'Usuario desconocido';
+                if (nombreAutor) {
+                    if (typeof nombreAutor === 'string' && nombreAutor.trim() !== '') {
+                        nombreParaMostrar = nombreAutor.trim();
+                    } else if (typeof nombreAutor !== 'string') {
+                        nombreParaMostrar = String(nombreAutor).trim();
+                    }
+                }
+
+                // Crear modal de confirmación
+                mostrarModalEliminarComentario(idComentario, nombreParaMostrar);
+            }
+
+            function mostrarModalEliminarComentario(idComentario, nombreAutor) {
+                // Crear el modal HTML
+                var modalHtml = '<div class="modal fade" id="modalEliminarComentario" tabindex="-1" role="dialog">' +
+                    '<div class="modal-dialog modal-dialog-centered" role="document">' +
+                        '<div class="modal-content">' +
+                            '<div class="modal-header bg-danger text-white">' +
+                                '<h5 class="modal-title">' +
+                                    '<i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación' +
+                                '</h5>' +
+                                '<button type="button" class="close text-white" data-dismiss="modal">' +
+                                    '<span>&times;</span>' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="modal-body">' +
+                                '<p class="mb-3">' +
+                                    '¿Estás seguro de que deseas eliminar el comentario de <strong>' + escapeHtml(nombreAutor) + '</strong>?' +
+                                '</p>' +
+                                '<div class="alert alert-warning">' +
+                                    '<i class="fas fa-info-circle"></i> ' +
+                                    'Esta acción no se puede deshacer.' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="modal-footer">' +
+                                '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
+                                    '<i class="fas fa-times"></i> Cancelar' +
+                                '</button>' +
+                                '<button type="button" class="btn btn-danger" id="btnConfirmarEliminar">' +
+                                    '<i class="fas fa-trash"></i> Eliminar Comentario' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+                // Eliminar modal anterior si existe
+                $('#modalEliminarComentario').remove();
+
+                // Agregar modal al DOM
+                $('body').append(modalHtml);
+
+                // Mostrar modal
+                $('#modalEliminarComentario').modal('show');
+
+                // Manejar confirmación
+                $('#btnConfirmarEliminar').off('click').on('click', function() {
+                    ejecutarEliminacionComentario(idComentario);
+                });
+
+                // Limpiar modal cuando se cierre
+                $('#modalEliminarComentario').on('hidden.bs.modal', function() {
+                    $(this).remove();
+                });
+            }
+
+            function ejecutarEliminacionComentario(idComentario) {
+                console.log('🚀 Ejecutando eliminación del comentario:', idComentario);
+
+                // Encontrar el elemento del comentario en el DOM
+                var commentElement = $('[data-comment-id="' + idComentario + '"]');
+
+                if (commentElement.length === 0) {
+                    console.error('❌ No se encontró el comentario en el DOM');
+                    showError('No se pudo encontrar el comentario a eliminar');
+                    $('#modalEliminarComentario').modal('hide');
+                    return;
+                }
+
+                // Encontrar la publicación padre para actualizar contador
+                var publicacionContainer = commentElement.closest('[data-post-id]');
+                var idPublicacion = publicacionContainer.attr('data-post-id');
+
+                console.log('📍 Comentario encontrado en publicación:', idPublicacion);
+
+                // Deshabilitar botón mientras se procesa
+                var btnConfirmar = $('#btnConfirmarEliminar');
+                var originalButtonText = btnConfirmar.html();
+                btnConfirmar.html('<i class="fas fa-spinner fa-spin"></i> Eliminando...').prop('disabled', true);
+
+                // Realizar petición AJAX
+                $.ajax({
+                    url: 'HomeServlet',
+                    type: 'POST',
+                    data: {
+                        action: 'deleteComment',
+                        idComentario: idComentario
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('📦 Respuesta del servidor:', response);
+
+                        if (response.success) {
+                            console.log('✅ Comentario eliminado del servidor');
+
+                            // Cerrar modal
+                            $('#modalEliminarComentario').modal('hide');
+
+                            // Animar y eliminar del DOM
+                            commentElement.fadeOut(300, function() {
+                                $(this).remove();
+
+                                // Actualizar contador de comentarios
+                                if (idPublicacion) {
+                                    actualizarContadorComentarios(idPublicacion, -1);
+                                }
+
+                                console.log('✅ Comentario eliminado del DOM');
+                            });
+
+                            // Mostrar notificación de éxito
+                            if (typeof showNotification === 'function') {
+                                showNotification('Comentario eliminado', 'success', 3000);
+                            } else if (typeof showSuccess === 'function') {
+                                showSuccess('Comentario eliminado exitosamente');
+                            } else {
+                                // Fallback
+                                console.log('✅ Comentario eliminado exitosamente');
+                            }
+
+                        } else {
+                            console.error('❌ Error del servidor:', response.message);
+
+                            // Restaurar botón
+                            btnConfirmar.html(originalButtonText).prop('disabled', false);
+
+                            // Mostrar error
+                            var errorMsg = response.message || 'Error al eliminar el comentario';
+                            if (typeof showError === 'function') {
+                                showError(errorMsg);
+                            } else {
+                                alert('Error: ' + errorMsg);
+                            }
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('❌ Error AJAX:', {
+                            status: status,
+                            error: error,
+                            responseText: xhr.responseText,
+                            statusCode: xhr.status
+                        });
+
+                        // Restaurar botón
+                        btnConfirmar.html(originalButtonText).prop('disabled', false);
+
+                        // Mostrar error
+                        var errorMessage = 'Error de conexión al eliminar el comentario';
+                        if (xhr.responseText) {
+                            try {
+                                var errorResponse = JSON.parse(xhr.responseText);
+                                errorMessage = errorResponse.message || errorMessage;
+                            } catch (e) {
+                                console.log('No se pudo parsear la respuesta de error');
+                            }
+                        }
+
+                        if (typeof showError === 'function') {
+                            showError(errorMessage);
+                        } else {
+                            alert('Error: ' + errorMessage);
+                        }
+                    }
+                });
+            }
+
+            function actualizarContadorComentarios(idPublicacion, cambio) {
+                console.log('📊 Actualizando contador de comentarios:', {
+                    publicacion: idPublicacion,
+                    cambio: cambio
+                });
+
+                // Encontrar el elemento del contador
+                var contadorElement = $('#commentCount_' + idPublicacion);
+
+                if (contadorElement.length > 0) {
+                    var contadorActual = parseInt(contadorElement.text()) || 0;
+                    var nuevoContador = Math.max(0, contadorActual + cambio);
+
+                    contadorElement.text(nuevoContador);
+
+                    console.log('📊 Contador actualizado:', {
+                        anterior: contadorActual,
+                        nuevo: nuevoContador
+                    });
+
+                    // Animar el cambio
+                    contadorElement.addClass('text-primary').delay(500).queue(function() {
+                        $(this).removeClass('text-primary').dequeue();
+                    });
+                } else {
+                    console.warn('⚠️ No se encontró contador para publicación:', idPublicacion);
+                }
+            }
+
+            function showSuccess(message) { showNotification(message, 'success'); }
+            function showError(message) { showNotification(message, 'error'); }
+            
+            // Función para seguir comunidad
+            function seguirComunidad(idComunidad, button) {
+
+                // Mostrar loading
+                const originalContent = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+                button.disabled = true;
+
+                $.ajax({
+                    url: 'ComunidadServlet',
+                    type: 'POST',
+                    data: {
+                        action: 'join',
+                        id: idComunidad
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Ocultar el suggestion-item completamente ya que ahora la sigue
+                            button.closest('.suggestion-item').style.display = 'none';
+
+                            // Mostrar notificación
+                            showNotification('¡Te has unido a la comunidad!', 'success');
+                        } else {
+                            // Restaurar botón
+                            button.innerHTML = originalContent;
+                            button.disabled = false;
+                            button.className = 'btn btn-sm btn-primary';
+                            alert(response.message || 'Error al unirse a la comunidad');
+                        }
+                    },
+                    error: function() {
+                        // Restaurar botón
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                        button.className = 'btn btn-sm btn-primary';
+                        alert('Error de conexión');
+                    }
+                });
+            }
+
+        </script>
