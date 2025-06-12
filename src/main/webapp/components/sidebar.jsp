@@ -29,7 +29,7 @@
                 <li class="<%= uri.endsWith("transmisiones.jsp") ? "active" : ""%>">
                     <a href="transmisiones.jsp"><span class="fas fa-broadcast-tower mr-3"></span>Transmisiones <span class="badge">1</span></a>
                 </li>
-                <li class="nav-item comunidades-nav <%= uri.endsWith("list.jsp") ? "active" : ""%>"">
+                <li class="nav-item comunidades-nav <%= uri.contains("/comunidades/") || uri.endsWith("list.jsp") ? "active" : ""%>">
                     <a href="#" class="nav-link" onclick="toggleComunidadesMenu(event)">
                         <i class="fas fa-users"></i>
                         <span>Comunidades</span>
@@ -70,11 +70,12 @@
                 <li>
                     <button type="button" class="btn btn-cuadrado btn-cuadrado-crear-live" data-toggle="modal"
                             data-target="#streamModal">Crear Live</button>
-                <% }else if (uri.endsWith("list.jsp")){%>
-                    <button type="button" class="btn btn-cuadrado btn-cuadrado-crear-post" data-toggle="modal"
-                            data-target="#communityModal">Crear Comunidad</button>
+                <% } else if (uri.contains("/comunidades/")) { %>
+                <li>
+                    <button class="btn btn-cuadrado btn-cuadrado-crear-post" onclick="window.location='ComunidadServlet?action=create';">
+                            <i class="fas fa-plus"></i> Nueva Comunidad</button>
                 </li>
-                <% }%>
+                <% } %>
             </ul>
 
         </div>
@@ -304,9 +305,8 @@
         submenu.classList.toggle('show');
     }
     
-    // Función para unirse a comunidad desde sugerencias
     function unirseAComunidad(idComunidad) {
-        if (!${sessionScope.usuario != null}) {
+        if (!${sessionScope.usuarioLogueado != null}) {
             alert('Debes iniciar sesión para unirte a una comunidad');
             return;
         }
