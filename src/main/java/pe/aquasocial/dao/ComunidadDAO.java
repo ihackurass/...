@@ -86,7 +86,7 @@ public class ComunidadDAO implements IComunidadDAO {
         String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador, u.avatar as avatar_creador "
                 + "FROM comunidades c "
                 + "LEFT JOIN usuarios u ON c.id_creador = u.id "
-                + "WHERE c.es_publica = TRUE "
+                //+ "WHERE c.es_publica = TRUE "
                 + "ORDER BY c.seguidores_count DESC, c.fecha_creacion DESC";
 
         try (Connection conn = Conexion.getConexion(); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {

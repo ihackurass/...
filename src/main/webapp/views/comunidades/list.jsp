@@ -79,6 +79,75 @@
         font-size: 14px;
     }
 
+    /* Búsqueda mejorada con filtros */
+    .search-filter-container {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .search-box input {
+        padding: 10px 15px 10px 40px;
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        width: 100%;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-box input:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+
+    .filter-dropdown {
+        padding: 10px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        background: white;
+        font-size: 14px;
+        min-width: 150px;
+        transition: border-color 0.3s ease;
+    }
+
+    .filter-dropdown:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    .clear-filters-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 25px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: none;
+    }
+
+    .clear-filters-btn:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+    }
+
     .search-container {
         display: flex;
         align-items: center;
@@ -279,40 +348,28 @@
     }
 
     .community-description {
-        color: #555;
-        font-size: 14px;
-        margin-bottom: 15px;
+        color: #666;
+        font-size: 13px;
         line-height: 1.4;
-        min-height: 35px;
+        margin-bottom: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .community-stats {
         display: flex;
-        justify-content: space-between;
+        gap: 15px;
         margin-bottom: 15px;
-        padding: 8px;
-        background: #f8f9fa;
-        border-radius: 6px;
         font-size: 12px;
-        color: #666;
+        color: #999;
     }
 
     .stat-item {
-        text-align: center;
-        flex: 1;
-    }
-
-    .stat-item .stat-number {
-        display: block;
-        font-weight: bold;
-        color: #007bff;
-        font-size: 14px;
-        margin-bottom: 2px;
-    }
-
-    .stat-item .stat-label {
-        font-size: 10px;
-        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
 
     .community-actions {
@@ -321,17 +378,19 @@
     }
 
     .btn-action {
-        flex: 1;
-        padding: 8px 12px;
+        padding: 8px 15px;
         border: none;
         border-radius: 5px;
         font-size: 12px;
-        font-weight: 500;
+        font-weight: 600;
+        text-decoration: none;
         cursor: pointer;
         transition: all 0.3s ease;
-        text-decoration: none;
-        text-align: center;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        flex: 1;
+        justify-content: center;
     }
 
     .btn-primary {
@@ -343,7 +402,6 @@
         background: #0056b3;
         color: white;
         text-decoration: none;
-        transform: translateY(-1px);
     }
 
     .btn-success {
@@ -353,6 +411,8 @@
 
     .btn-success:hover {
         background: #1e7e34;
+        color: white;
+        text-decoration: none;
     }
 
     .btn-danger {
@@ -362,42 +422,19 @@
 
     .btn-danger:hover {
         background: #c82333;
-    }
-
-    .btn-warning {
-        background: #ffc107;
-        color: #333;
-    }
-
-    .btn-warning:hover {
-        background: #e0a800;
-        color: #333;
+        color: white;
         text-decoration: none;
     }
 
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #666;
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
     }
 
-    .empty-state i {
-        font-size: 48px;
-        margin-bottom: 20px;
-        opacity: 0.3;
-        color: #007bff;
-    }
-
-    .empty-state h3 {
-        font-size: 20px;
-        margin-bottom: 15px;
-        color: #333;
-    }
-
-    .empty-state p {
-        font-size: 14px;
-        margin-bottom: 25px;
-        line-height: 1.5;
+    .btn-secondary:hover {
+        background: #545b62;
+        color: white;
+        text-decoration: none;
     }
 
     .quick-actions {
@@ -465,6 +502,51 @@
         color: #999;
         font-style: italic;
     }
+
+    /* Contador de resultados */
+    .results-counter {
+        background: #e3f2fd;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #1976d2;
+        border-left: 4px solid #2196f3;
+        display: none;
+    }
+
+    /* Estado sin resultados */
+    .no-results {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        display: none;
+    }
+
+    .no-results i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .search-filter-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-box {
+            min-width: auto;
+        }
+        
+        .community-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .filter-tabs {
+            flex-wrap: wrap;
+        }
+    }
 </style>
 
 <body>
@@ -484,7 +566,7 @@
                                     <i class="<%= icono %> me-2"></i>
                                     <%= titulo %>
                                     <span style="font-size: 14px; color: #666; font-weight: normal;">
-                                        (<%= totalComunidades %> 
+                                        (<span id="totalComunidades"><%= totalComunidades %></span> 
                                         <%= "myCommunities".equals(tipoVista) ? "seguidas" : 
                                             "managedCommunities".equals(tipoVista) ? "administradas" : "encontradas" %>)
                                     </span>
@@ -492,23 +574,41 @@
                                 <p class="subtitle"><%= descripcion %></p>
                             </div>
                             
-                            <!-- Búsqueda (solo en "todas") -->
+                            <!-- Búsqueda mejorada con filtros (solo en "todas") -->
                             <% if ("all".equals(tipoVista) || tipoVista == null) { %>
-                                <form method="get" action="ComunidadServlet" class="search-container">
-                                    <input type="hidden" name="action" value="search">
-                                    <input type="text" 
-                                           name="q" 
-                                           placeholder="Buscar comunidades..."
-                                           value="<%= searchQuery != null ? searchQuery : "" %>">
-                                    <button type="submit">
+                                <div class="search-filter-container">
+                                    <div class="search-box">
                                         <i class="fas fa-search"></i>
+                                        <input type="text" id="searchCommunities" placeholder="Buscar comunidades..." value="<%= searchQuery != null ? searchQuery : "" %>">
+                                    </div>
+                                    <select class="filter-dropdown" id="filterPrivacy">
+                                        <option value="">Todas las comunidades</option>
+                                        <option value="public">Solo públicas</option>
+                                        <option value="private">Solo privadas</option>
+                                    </select>
+                                    <select class="filter-dropdown" id="filterRole">
+                                        <option value="">Todos los roles</option>
+                                        <% if (usuarioActual != null) { %>
+                                            <option value="creator">Soy creador</option>
+                                            <option value="admin">Soy admin</option>
+                                            <option value="member">Soy miembro</option>
+                                            <option value="not-member">No soy miembro</option>
+                                        <% } %>
+                                    </select>
+                                    <button class="clear-filters-btn" id="clearFilters">
+                                        <i class="fas fa-times"></i> Limpiar
                                     </button>
-                                </form>
+                                </div>
                             <% } else { %>
-                                <div style="text-align: right;">
-                                    <a href="ComunidadServlet" class="btn-action btn-primary">
-                                        <i class="fas fa-search me-1"></i>Explorar Más
-                                    </a>
+                                <!-- Búsqueda simple para mis comunidades -->
+                                <div class="search-filter-container">
+                                    <div class="search-box">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" id="searchCommunities" placeholder="Buscar en mis comunidades...">
+                                    </div>
+                                    <button class="clear-filters-btn" id="clearFilters">
+                                        <i class="fas fa-times"></i> Limpiar
+                                    </button>
                                 </div>
                             <% } %>
                         </div>
@@ -539,15 +639,12 @@
                             <% } %>
                         </div>
 
-                        <!-- Estadísticas (solo para mis comunidades y administradas) -->
-                        <% if (("myCommunities".equals(tipoVista) || "managedCommunities".equals(tipoVista)) && 
-                               comunidades != null && !comunidades.isEmpty()) { %>
+                        <!-- Estadísticas para mis comunidades y administradas -->
+                        <% if ("myCommunities".equals(tipoVista) || "managedCommunities".equals(tipoVista)) { %>
                             <div class="stats-summary">
                                 <div class="stat-box">
                                     <span class="stat-number"><%= totalComunidades %></span>
-                                    <span class="stat-label">
-                                        <%= "myCommunities".equals(tipoVista) ? "Seguidas" : "Administradas" %>
-                                    </span>
+                                    <span class="stat-label"><%= "myCommunities".equals(tipoVista) ? "Seguidas" : "Administradas" %></span>
                                 </div>
                                 <div class="stat-box">
                                     <span class="stat-number">
@@ -578,34 +675,34 @@
                             </div>
                         <% } %>
 
-
-                        <!-- Mensaje de búsqueda -->
-                        <% if (searchQuery != null && !searchQuery.trim().isEmpty()) { %>
-                            <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; border-left: 4px solid #2196f3;">
-                                <strong>Resultados para:</strong> "<%= searchQuery %>"
-                            </div>
-                        <% } %>
+                        <!-- Contador de resultados filtrados -->
+                        <div class="results-counter" id="resultsCounter">
+                            Mostrando <span id="filteredCount">0</span> de <%= totalComunidades %> comunidades
+                        </div>
 
                         <!-- Grid de comunidades -->
                         <% if (comunidades != null && !comunidades.isEmpty()) { %>
-                            <div class="community-grid">
+                            <div class="community-grid" id="communityGrid">
                                 <% for (Comunidad comunidad : comunidades) { %>
-                                    <div class="community-card">
+                                    <div class="community-card" 
+                                         data-name="<%= comunidad.getNombre().toLowerCase() %>"
+                                         data-handle="<%= comunidad.getUsername() != null ? comunidad.getUsername().toLowerCase() : "" %>"
+                                         data-description="<%= comunidad.getDescripcion() != null ? comunidad.getDescripcion().toLowerCase() : "" %>"
+                                         data-privacy="<%= comunidad.isEsPublica() ? "public" : "private" %>"
+                                         data-role="<%= comunidad.isUsuarioEsCreador() ? "creator" : 
+                                                       comunidad.isUsuarioEsAdmin() ? "admin" : 
+                                                       comunidad.isUsuarioEsSeguidor() ? "member" : "not-member" %>">
+                                        
                                         <!-- Badge de privacidad (solo en "todas") -->
                                         <% if ("all".equals(tipoVista) || tipoVista == null) { %>
                                             <div class="privacy-badge <%= comunidad.isEsPublica() ? "badge-public" : "badge-private" %>">
-                                                <% if (comunidad.isEsPublica()) { %>
-                                                    <i class="fas fa-globe"></i> Pública
-                                                <% } else { %>
-                                                    <i class="fas fa-lock"></i> Privada
-                                                <% } %>
+                                                <%= comunidad.isEsPublica() ? "Pública" : "Privada" %>
                                             </div>
                                         <% } %>
 
-                                        <!-- Badge de rol (en mis comunidades y administradas) -->
-                                        <% if (("myCommunities".equals(tipoVista) || "managedCommunities".equals(tipoVista)) && usuarioActual != null) { %>
-                                            <div class="role-badge 
-                                                <%= comunidad.isUsuarioEsCreador() ? "role-creator" : 
+                                        <!-- Badge de rol (solo en "mis comunidades" y "que administro") -->
+                                        <% if (!"all".equals(tipoVista) && tipoVista != null) { %>
+                                            <div class="role-badge <%= comunidad.isUsuarioEsCreador() ? "role-creator" : 
                                                     comunidad.isUsuarioEsAdmin() ? "role-admin" : "role-member" %>">
                                                 <% if (comunidad.isUsuarioEsCreador()) { %>
                                                     <i class="fas fa-crown"></i> Creador
@@ -633,105 +730,92 @@
                                                     <div class="join-date">
                                                         <i class="fas fa-calendar"></i>
                                                         Miembro desde <%= comunidad.getFechaCreacion() != null ? 
-                                                            comunidad.getFechaCreacion().getYear() : "2024" %>
+                                                            new java.text.SimpleDateFormat("dd/MM/yyyy").format(
+                                                                java.sql.Timestamp.valueOf(comunidad.getFechaCreacion())) : "fecha desconocida" %>
                                                     </div>
                                                 <% } %>
                                             </div>
                                         </div>
 
+                                        <!-- Descripción -->
                                         <div class="community-description">
-                                            <% if (comunidad.getDescripcion() != null && !comunidad.getDescripcion().trim().isEmpty()) { %>
-                                                <% if (comunidad.getDescripcion().length() > 80) { %>
-                                                    <%= comunidad.getDescripcion().substring(0, 80) %>...
-                                                <% } else { %>
-                                                    <%= comunidad.getDescripcion() %>
-                                                <% } %>
-                                            <% } else { %>
-                                                <em style="color: #999;">Sin descripción disponible</em>
-                                            <% } %>
+                                            <%= comunidad.getDescripcion() != null ? comunidad.getDescripcion() : "Sin descripción disponible" %>
                                         </div>
 
+                                        <!-- Estadísticas -->
                                         <div class="community-stats">
                                             <div class="stat-item">
-                                                <span class="stat-number"><%= comunidad.getSeguidoresCount() %></span>
-                                                <span class="stat-label">Miembros</span>
+                                                <i class="fas fa-users"></i>
+                                                <%= comunidad.getSeguidoresCount() %> miembros
                                             </div>
                                             <div class="stat-item">
-                                                <span class="stat-number"><%= comunidad.getPublicacionesCount() %></span>
-                                                <span class="stat-label">Posts</span>
-                                            </div>
-                                            <div class="stat-item">
-                                                <span class="stat-number">
-                                                    <%= comunidad.getFechaCreacion() != null ? 
-                                                        comunidad.getFechaCreacion().getYear() : "2024" %>
-                                                </span>
-                                                <span class="stat-label">Creada</span>
+                                                <i class="fas fa-newspaper"></i>
+                                                <%= comunidad.getPublicacionesCount() %> posts
                                             </div>
                                         </div>
 
-                                        <!-- Acciones dinámicas -->
+                                        <!-- Acciones -->
                                         <div class="community-actions">
+                                            <!-- Botón para ver -->
                                             <a href="ComunidadServlet?action=view&id=<%= comunidad.getIdComunidad() %>" 
                                                class="btn-action btn-primary">
                                                 <i class="fas fa-eye"></i> Ver
                                             </a>
 
                                             <% if (usuarioActual != null) { %>
-                                                <!-- Acciones para comunidades que sigue -->
                                                 <% if (comunidad.isUsuarioEsSeguidor()) { %>
-                                                    <% if (comunidad.isUsuarioEsCreador() || comunidad.isUsuarioEsAdmin()) { %>
+                                                    <!-- Opciones para miembros -->
+                                                    <% if (comunidad.isUsuarioEsCreador()) { %>
                                                         <a href="ComunidadServlet?action=edit&id=<%= comunidad.getIdComunidad() %>" 
-                                                           class="btn-action btn-warning">
+                                                           class="btn-action btn-secondary">
                                                             <i class="fas fa-edit"></i> Editar
                                                         </a>
                                                     <% } %>
                                                     
                                                     <% if (!comunidad.isUsuarioEsCreador()) { %>
-                                                        <form method="post" action="ComunidadServlet" style="flex: 1;">
-                                                            <input type="hidden" name="action" value="leave">
-                                                            <input type="hidden" name="id" value="<%= comunidad.getIdComunidad() %>">
-                                                            <button type="submit" class="btn-action btn-danger" style="width: 100%;">
-                                                                <i class="fas fa-sign-out-alt"></i> Salir
-                                                            </button>
-                                                        </form>
+                                                        <button class="btn-action btn-danger" style="width: 100%;" 
+                                                                onclick="confirmarSalirComunidad(<%= comunidad.getIdComunidad() %>, '<%= comunidad.getNombre().replace("'", "\\'") %>')">
+                                                            <i class="fas fa-sign-out-alt"></i> Salir
+                                                        </button>
                                                     <% } %>
                                                 <% } else { %>
                                                     <!-- Acción para unirse -->
-                                                    <form method="post" action="ComunidadServlet" style="flex: 1;">
-                                                        <input type="hidden" name="action" value="join">
-                                                        <input type="hidden" name="id" value="<%= comunidad.getIdComunidad() %>">
-                                                        <button type="submit" class="btn-action btn-success" style="width: 100%;">
-                                                            <i class="fas fa-plus"></i> Unirse
-                                                        </button>
-                                                    </form>
+                                                    <button class="btn-action btn-success" style="width: 100%;" 
+                                                            onclick="confirmarUnirseComunidad(<%= comunidad.getIdComunidad() %>, '<%= comunidad.getNombre().replace("'", "\\'") %>', <%= comunidad.isEsPublica() %>)">
+                                                        <i class="fas fa-plus"></i> Unirse
+                                                    </button>
                                                 <% } %>
                                             <% } %>
                                         </div>
                                     </div>
                                 <% } %>
                             </div>
+                            
+                            <!-- Mensaje cuando no hay resultados del filtro -->
+                            <div class="no-results" id="noResults">
+                                <i class="fas fa-search"></i>
+                                <h3>No se encontraron comunidades</h3>
+                                <p>Intenta ajustar los filtros de búsqueda</p>
+                            </div>
+                            
                         <% } else { %>
-                            <!-- Estado vacío dinámico -->
-                            <div class="empty-state">
+                            <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
                                 <% if ("myCommunities".equals(tipoVista)) { %>
-                                    <i class="fas fa-heart-broken"></i>
-                                    <h3>No sigues ninguna comunidad aún</h3>
-                                    <p>¡Explora y únete a comunidades que te interesen!</p>
-                                    <a href="ComunidadServlet" class="btn-action btn-primary" style="margin-right: 10px;">
+                                    <i class="fas fa-heart" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
+                                    <h3>No sigues ninguna comunidad</h3>
+                                    <p>Explora comunidades y únete a las que te interesen</p>
+                                    <a href="ComunidadServlet" class="btn-action btn-primary">
                                         <i class="fas fa-search"></i> Explorar Comunidades
                                     </a>
-                                    <a href="#" onclick="abrirModalCrear()" class="btn-action btn-warning">
-                                        <i class="fas fa-plus"></i> Crear Mi Primera Comunidad
-                                    </a>
                                 <% } else if ("managedCommunities".equals(tipoVista)) { %>
-                                    <i class="fas fa-crown"></i>
+                                    <i class="fas fa-crown" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
                                     <h3>No administras ninguna comunidad</h3>
                                     <p>Crea tu primera comunidad y conviértete en líder</p>
                                     <a href="#" onclick="abrirModalCrear()" class="btn-action btn-primary">
                                         <i class="fas fa-plus"></i> Crear Mi Primera Comunidad
                                     </a>
                                 <% } else { %>
-                                    <i class="fas fa-users"></i>
+                                    <i class="fas fa-users" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
                                     <h3>
                                         <% if (searchQuery != null && !searchQuery.trim().isEmpty()) { %>
                                             No se encontraron comunidades
@@ -770,54 +854,476 @@
     <jsp:include page="/components/js_imports.jsp" />
 
     <script>
-        // Confirmación para salir de comunidad
-        document.querySelectorAll('form[action*="ComunidadServlet"] button[type="submit"]').forEach(button => {
-            if (button.textContent.includes('Salir')) {
-                button.closest('form').addEventListener('submit', function(e) {
-                    if (!confirm('¿Estás seguro de que quieres salir de esta comunidad?')) {
-                        e.preventDefault();
+        $(document).ready(function() {
+            const totalComunidades = <%= totalComunidades %>;
+            
+            // Funcionalidad de búsqueda y filtros en tiempo real
+            $('#searchCommunities').on('input', function() {
+                filterCommunities();
+            });
+            
+            $('#filterPrivacy').on('change', function() {
+                filterCommunities();
+            });
+            
+            $('#filterRole').on('change', function() {
+                filterCommunities();
+            });
+            
+            // Botón limpiar filtros
+            $('#clearFilters').on('click', function() {
+                $('#searchCommunities').val('');
+                $('#filterPrivacy').val('');
+                $('#filterRole').val('');
+                filterCommunities();
+                $(this).hide();
+            });
+            
+            function filterCommunities() {
+                const searchTerm = $('#searchCommunities').val().toLowerCase();
+                const selectedPrivacy = $('#filterPrivacy').val();
+                const selectedRole = $('#filterRole').val();
+                
+                let visibleCount = 0;
+                let hasActiveFilters = searchTerm !== '' || selectedPrivacy !== '' || selectedRole !== '';
+                
+                $('.community-card').each(function() {
+                    const $card = $(this);
+                    const name = $card.data('name') || '';
+                    const handle = $card.data('handle') || '';
+                    const description = $card.data('description') || '';
+                    const privacy = $card.data('privacy') || '';
+                    const role = $card.data('role') || '';
+                    
+                    // Filtro de búsqueda (nombre, handle o descripción)
+                    const matchesSearch = searchTerm === '' || 
+                        name.includes(searchTerm) || 
+                        handle.includes(searchTerm) || 
+                        description.includes(searchTerm);
+                    
+                    // Filtro de privacidad
+                    const matchesPrivacy = selectedPrivacy === '' || privacy === selectedPrivacy;
+                    
+                    // Filtro de rol
+                    const matchesRole = selectedRole === '' || role === selectedRole;
+                    
+                    if (matchesSearch && matchesPrivacy && matchesRole) {
+                        $card.show();
+                        visibleCount++;
+                    } else {
+                        $card.hide();
+                    }
+                });
+                
+                // Actualizar contador
+                $('#totalComunidades').text(visibleCount);
+                $('#filteredCount').text(visibleCount);
+                
+                // Mostrar/ocultar elementos según resultados
+                if (hasActiveFilters) {
+                    $('#resultsCounter').show();
+                    $('#clearFilters').show();
+                } else {
+                    $('#resultsCounter').hide();
+                    $('#clearFilters').hide();
+                    $('#totalComunidades').text(totalComunidades);
+                }
+                
+                if (visibleCount === 0 && hasActiveFilters) {
+                    $('#noResults').show();
+                    $('#communityGrid').hide();
+                } else {
+                    $('#noResults').hide();
+                    $('#communityGrid').show();
+                }
+            }
+            
+            // Función para abrir modal de crear (placeholder)
+            window.abrirModalCrear = function() {
+                // Redireccionar a página de crear o abrir modal
+                window.location.href = 'ComunidadServlet?action=create';
+            };
+            
+            // Función para confirmar unirse a comunidad
+            window.confirmarUnirseComunidad = function(idComunidad, nombreComunidad, esPublica) {
+                var tituloModal = esPublica ? 'Unirse a Comunidad Pública' : 'Solicitar Unirse a Comunidad';
+                var mensaje = esPublica ? 
+                    'Te unirás inmediatamente a esta comunidad y podrás participar en sus discusiones.' : 
+                    'Enviarás una solicitud para unirte a esta comunidad privada. Deberás esperar la aprobación de un administrador.';
+                var btnTexto = esPublica ? 'Unirse Ahora' : 'Enviar Solicitud';
+                var btnColor = esPublica ? 'btn-success' : 'btn-info';
+                var iconoModal = esPublica ? 'fas fa-users' : 'fas fa-paper-plane';
+                
+                var modalHtml = '<div class="modal fade" id="modalUnirse" tabindex="-1" role="dialog">' +
+                    '<div class="modal-dialog modal-dialog-centered" role="document">' +
+                        '<div class="modal-content">' +
+                            '<div class="modal-header bg-primary text-white">' +
+                                '<h5 class="modal-title">' +
+                                    '<i class="' + iconoModal + '"></i> ' + tituloModal +
+                                '</h5>' +
+                                '<button type="button" class="close text-white" data-dismiss="modal">' +
+                                    '<span>&times;</span>' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="modal-body">' +
+                                '<p class="mb-3">' +
+                                    '¿Quieres unirte a <strong>' + escapeHtml(nombreComunidad) + '</strong>?' +
+                                '</p>' +
+                                '<div class="alert alert-info">' +
+                                    '<i class="fas fa-info-circle"></i> ' + mensaje +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="modal-footer">' +
+                                '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
+                                    '<i class="fas fa-times"></i> Cancelar' +
+                                '</button>' +
+                                '<button type="button" class="btn ' + btnColor + '" id="btnConfirmarUnion">' +
+                                    '<i class="' + iconoModal + '"></i> ' + btnTexto +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+                
+                // Remover modal anterior si existe
+                $('#modalUnirse').remove();
+                
+                // Agregar nuevo modal al DOM
+                $('body').append(modalHtml);
+                
+                // Mostrar modal
+                $('#modalUnirse').modal('show');
+                
+                // Manejar confirmación
+                $('#btnConfirmarUnion').off('click').on('click', function() {
+                    var $btn = $(this);
+                    var originalText = $btn.html();
+                    
+                    // Mostrar loading
+                    $btn.html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+                    $btn.prop('disabled', true);
+                    
+                    $.ajax({
+                        url: 'ComunidadServlet',
+                        type: 'POST',
+                        data: {
+                            action: 'join',
+                            idComunidad: idComunidad
+                        },
+                        success: function(response) {
+                            $('#modalUnirse').modal('hide');
+                            if (response.success) {
+                                showSuccess(response.message);
+                                
+                                // Actualizar la tarjeta de la comunidad
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                showError(response.message || 'Error al unirse a la comunidad');
+                            }
+                        },
+                        error: function() {
+                            $('#modalUnirse').modal('hide');
+                            showError('Error de conexión al unirse a la comunidad');
+                        },
+                        complete: function() {
+                            $btn.html(originalText);
+                            $btn.prop('disabled', false);
+                        }
+                    });
+                });
+            };
+            
+            // Función para confirmar salir de comunidad
+            window.confirmarSalirComunidad = function(idComunidad, nombreComunidad) {
+                var modalHtml = '<div class="modal fade" id="modalSalir" tabindex="-1" role="dialog">' +
+                    '<div class="modal-dialog modal-dialog-centered" role="document">' +
+                        '<div class="modal-content">' +
+                            '<div class="modal-header bg-warning text-dark">' +
+                                '<h5 class="modal-title">' +
+                                    '<i class="fas fa-sign-out-alt"></i> Salir de Comunidad' +
+                                '</h5>' +
+                                '<button type="button" class="close" data-dismiss="modal">' +
+                                    '<span>&times;</span>' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="modal-body">' +
+                                '<p class="mb-3">' +
+                                    '¿Estás seguro de que deseas salir de <strong>' + escapeHtml(nombreComunidad) + '</strong>?' +
+                                '</p>' +
+                                '<div class="alert alert-warning">' +
+                                    '<i class="fas fa-exclamation-triangle"></i> ' +
+                                    'Perderás acceso a las publicaciones y deberás solicitar unirte nuevamente para volver.' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="modal-footer">' +
+                                '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
+                                    '<i class="fas fa-times"></i> Cancelar' +
+                                '</button>' +
+                                '<button type="button" class="btn btn-warning" id="btnConfirmarSalida">' +
+                                    '<i class="fas fa-sign-out-alt"></i> Salir de Comunidad' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+                
+                // Remover modal anterior si existe
+                $('#modalSalir').remove();
+                
+                // Agregar nuevo modal al DOM
+                $('body').append(modalHtml);
+                
+                // Mostrar modal
+                $('#modalSalir').modal('show');
+                
+                // Manejar confirmación
+                $('#btnConfirmarSalida').off('click').on('click', function() {
+                    var $btn = $(this);
+                    var originalText = $btn.html();
+                    
+                    // Mostrar loading
+                    $btn.html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+                    $btn.prop('disabled', true);
+                    
+                    $.ajax({
+                        url: 'ComunidadServlet',
+                        type: 'POST',
+                        data: {
+                            action: 'leave',
+                            idComunidad: idComunidad
+                        },
+                        success: function(response) {
+                            $('#modalSalir').modal('hide');
+                            if (response.success) {
+                                showSuccess(response.message);
+                                
+                                // Actualizar la tarjeta de la comunidad
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                showError(response.message || 'Error al salir de la comunidad');
+                            }
+                        },
+                        error: function() {
+                            $('#modalSalir').modal('hide');
+                            showError('Error de conexión al salir de la comunidad');
+                        },
+                        complete: function() {
+                            $btn.html(originalText);
+                            $btn.prop('disabled', false);
+                        }
+                    });
+                });
+            };
+            
+            // Función para escapar HTML
+            function escapeHtml(text) {
+                var map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+            
+            // Animación de entrada para las tarjetas
+            $('.community-card').each(function(index) {
+                $(this).css('opacity', '0');
+                $(this).delay(index * 50).animate({
+                    opacity: 1
+                }, 300);
+            });
+        });
+
+
+            // ========== FUNCIONES DE UTILIDAD ==========
+            function showNotification(message, type, duration) {
+                duration = duration || 4000; // Default 4 segundos
+
+                // Configuración por tipo
+                var config = {
+                    success: {
+                        icon: 'fa-check-circle',
+                        bgColor: '#28a745',
+                        textColor: '#fff',
+                        title: '¡Éxito!'
+                    },
+                    error: {
+                        icon: 'fa-exclamation-triangle',
+                        bgColor: '#dc3545',
+                        textColor: '#fff',
+                        title: 'Error'
+                    },
+                    warning: {
+                        icon: 'fa-exclamation-circle',
+                        bgColor: '#ffc107',
+                        textColor: '#212529',
+                        title: 'Atención'
+                    },
+                    info: {
+                        icon: 'fa-info-circle',
+                        bgColor: '#17a2b8',
+                        textColor: '#fff',
+                        title: 'Información'
+                    }
+                };
+
+                var setting = config[type] || config.info;
+                var toastId = 'toast-' + Date.now();
+
+                // Crear contenedor de toasts si no existe
+                if ($('#toast-container').length === 0) {
+                    $('body').append(
+                        '<div id="toast-container" style="' +
+                            'position: fixed;' +
+                            'top: 20px;' +
+                            'right: 20px;' +
+                            'z-index: 9999;' +
+                            'max-width: 350px;' +
+                        '"></div>'
+                    );
+                }
+
+                // Crear el toast
+                var toast = 
+                    '<div id="' + toastId + '" class="toast-notification" style="' +
+                        'background: ' + setting.bgColor + ';' +
+                        'color: ' + setting.textColor + ';' +
+                        'border-radius: 8px;' +
+                        'box-shadow: 0 4px 12px rgba(0,0,0,0.15);' +
+                        'margin-bottom: 10px;' +
+                        'overflow: hidden;' +
+                        'transform: translateX(100%);' +
+                        'transition: all 0.3s ease;' +
+                        'position: relative;' +
+                    '">' +
+                        '<!-- Barra de progreso -->' +
+                        '<div class="toast-progress" style="' +
+                            'position: absolute;' +
+                            'top: 0;' +
+                            'left: 0;' +
+                            'height: 3px;' +
+                            'background: rgba(255,255,255,0.3);' +
+                            'width: 100%;' +
+                            'transform-origin: left;' +
+                            'animation: toastProgress ' + duration + 'ms linear forwards;' +
+                        '"></div>' +
+
+                        '<!-- Contenido -->' +
+                        '<div style="' +
+                            'padding: 16px;' +
+                            'display: flex;' +
+                            'align-items: center;' +
+                            'gap: 12px;' +
+                        '">' +
+                            '<!-- Icono -->' +
+                            '<div style="' +
+                                'width: 40px;' +
+                                'height: 40px;' +
+                                'border-radius: 50%;' +
+                                'background: rgba(255,255,255,0.2);' +
+                                'display: flex;' +
+                                'align-items: center;' +
+                                'justify-content: center;' +
+                                'flex-shrink: 0;' +
+                            '">' +
+                                '<i class="fas ' + setting.icon + '" style="font-size: 18px;"></i>' +
+                            '</div>' +
+
+                            '<!-- Texto -->' +
+                            '<div style="flex: 1; min-width: 0;">' +
+                                '<div style="' +
+                                    'font-weight: 600;' +
+                                    'font-size: 14px;' +
+                                    'margin-bottom: 2px;' +
+                                '">' + setting.title + '</div>' +
+                                '<div style="' +
+                                    'font-size: 13px;' +
+                                    'opacity: 0.9;' +
+                                    'word-wrap: break-word;' +
+                                '">' + message + '</div>' +
+                            '</div>' +
+
+                            '<!-- Botón cerrar -->' +
+                            '<button class="toast-close" style="' +
+                                'background: none;' +
+                                'border: none;' +
+                                'color: inherit;' +
+                                'font-size: 18px;' +
+                                'opacity: 0.7;' +
+                                'cursor: pointer;' +
+                                'padding: 4px;' +
+                                'border-radius: 4px;' +
+                                'transition: opacity 0.2s ease;' +
+                            '" onclick="closeToast(\'' + toastId + '\')">' +
+                                '<i class="fas fa-times"></i>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+
+                // Agregar al contenedor
+                $('#toast-container').append(toast);
+
+                // Animar entrada
+                setTimeout(function() {
+                    $('#' + toastId).css('transform', 'translateX(0)');
+                }, 10);
+
+                // Auto-cerrar
+                setTimeout(function() {
+                    closeToast(toastId);
+                }, duration);
+
+                // Agregar hover para pausar
+                $('#' + toastId)
+                    .on('mouseenter', function() {
+                        $(this).find('.toast-progress').css('animation-play-state', 'paused');
+                    })
+                    .on('mouseleave', function() {
+                        $(this).find('.toast-progress').css('animation-play-state', 'running');
+                    });
+            }
+
+            /**
+             * Cerrar toast específico
+             */
+            function closeToast(toastId) {
+                var toast = $('#' + toastId);
+                if (toast.length) {
+                    toast.css({
+                        'transform': 'translateX(100%)',
+                        'opacity': '0'
+                    });
+
+                    setTimeout(function() {
+                        toast.remove();
+
+                        // Remover contenedor si está vacío
+                        if ($('#toast-container .toast-notification').length === 0) {
+                            $('#toast-container').remove();
+                        }
+                    }, 300);
+                }
+            }
+
+            /**
+             * Limpiar todos los toasts
+             */
+            function clearAllToasts() {
+                $('.toast-notification').each(function() {
+                    var id = $(this).attr('id');
+                    if (id) {
+                        closeToast(id);
                     }
                 });
             }
-        });
-
-        // Hover effects para las tarjetas
-        document.querySelectorAll('.community-card').forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.borderColor = '#007bff';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.borderColor = '#e0e0e0';
-            });
-        });
-
-        // Auto-focus en campo de búsqueda (solo en vista "todas")
-        const searchInput = document.querySelector('input[name="q"]');
-        if (searchInput && !searchInput.value) {
-            searchInput.focus();
-        }
-
-        // Función para abrir modal de crear comunidad (placeholder)
-        function abrirModalCrear() {
-            // TODO: Implementar modal para crear comunidad
-            alert('Modal de crear comunidad se implementará con AJAX');
-        }
-
-        // Animaciones de entrada para las tarjetas
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.community-card');
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                
-                setTimeout(() => {
-                    card.style.transition = 'all 0.5s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
-        });
+        function showSuccess(message) { showNotification(message, 'success'); }
+        function showError(message) { showNotification(message, 'error'); }
     </script>
 </body>
-
 </html>

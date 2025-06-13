@@ -256,6 +256,7 @@ public class ComunidadServlet extends HttpServlet {
             System.out.println("✅ Mensaje transferido a request y limpiado de sesión");
         }
     }
+
     private void verComunidad(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -300,12 +301,23 @@ public class ComunidadServlet extends HttpServlet {
                 request.setAttribute("comentarios_" + pub.getIdPublicacion(), comentarios != null ? comentarios : new ArrayList<>());
             }
 
-            // Obtener miembros si el usuario tiene permisos
             List<ComunidadMiembro> miembros = new ArrayList<>();
-            if (usuarioActual != null && (comunidad.isUsuarioEsSeguidor() || comunidad.isUsuarioEsAdmin() || comunidad.isUsuarioEsCreador())) {
-                miembros = comunidadDAO.obtenerMiembrosPorComunidad(idComunidad);
+
+            boolean puedeVerMiembros = false;
+
+            if (usuarioActual != null) {
+                if (comunidad.isUsuarioEsSeguidor() || comunidad.isUsuarioEsAdmin() || comunidad.isUsuarioEsCreador()) {
+                    puedeVerMiembros = true;
+                } 
+                else if (comunidad.isEsPublica()) {
+                    puedeVerMiembros = true;
+                }
             }
 
+// Obtener miembros solo si tiene permisos
+            if (puedeVerMiembros) {
+                miembros = comunidadDAO.obtenerMiembrosPorComunidad(idComunidad);
+            }
             // Verificar si puede publicar en esta comunidad
             boolean puedePublicar = false;
             if (usuarioActual != null) {

@@ -25,7 +25,8 @@ import pe.aquasocial.util.SessionUtil;
     "/HomeServlet", // Todas las rutas de home
     "/user/*", // Todas las rutas de usuario
     "/posts/*", // Gestión de posts
-    "/admin/*" // Área de administración
+    "/admin/*", // Área de administración
+    "/ComunidadServlet"    
 })
 public class AuthenticationFilter implements Filter {
 
