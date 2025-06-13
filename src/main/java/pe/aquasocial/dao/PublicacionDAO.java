@@ -31,7 +31,6 @@ public class PublicacionDAO implements IPublicacionDAO {
             stmt.setBoolean(5, publicacion.isEstaAprobado());
             stmt.setTimestamp(6, Timestamp.valueOf(publicacion.getFechaPublicacion()));
 
-            // ✅ SOLUCION: Verificar si idComunidad es null
             if (publicacion.getIdComunidad() != null) {
                 stmt.setInt(7, publicacion.getIdComunidad());
             } else {

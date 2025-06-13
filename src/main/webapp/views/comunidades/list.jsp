@@ -624,9 +624,11 @@
                                             </div>
                                             <div class="community-info">
                                                 <h3><%= comunidad.getNombre() %></h3>
-                                                <div class="community-handle">
-                                                    @<%= comunidad.getNombre().replaceAll(" ", "").toLowerCase() %>
-                                                </div>
+                                                <% if (comunidad.getUsername() != null && !comunidad.getUsername().trim().isEmpty()) { %>
+                                                    <div class="community-handle">@<%= comunidad.getUsername() %></div>
+                                                <% } else { %>
+                                                    <div class="community-handle">Sin username</div>
+                                                <% } %>
                                                 <% if ("myCommunities".equals(tipoVista)) { %>
                                                     <div class="join-date">
                                                         <i class="fas fa-calendar"></i>
@@ -637,7 +639,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- Descripción -->
                                         <div class="community-description">
                                             <% if (comunidad.getDescripcion() != null && !comunidad.getDescripcion().trim().isEmpty()) { %>
                                                 <% if (comunidad.getDescripcion().length() > 80) { %>
@@ -650,7 +651,6 @@
                                             <% } %>
                                         </div>
 
-                                        <!-- Estadísticas -->
                                         <div class="community-stats">
                                             <div class="stat-item">
                                                 <span class="stat-number"><%= comunidad.getSeguidoresCount() %></span>

@@ -19,15 +19,16 @@ public class ComunidadDAO implements IComunidadDAO {
      * Crear nueva comunidad
      */
     public boolean crear(Comunidad comunidad) {
-        String sql = "INSERT INTO comunidades (nombre, descripcion, imagen_url, id_creador, es_publica) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO comunidades (nombre, comunidad_username, descripcion, imagen_url, id_creador, es_publica) VALUES (?,? ,?, ?, ?, ?)";
 
         try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, comunidad.getNombre().trim());
-            stmt.setString(2, comunidad.getDescripcion().trim());
-            stmt.setString(3, comunidad.getImagenUrl());
-            stmt.setInt(4, comunidad.getIdCreador());
-            stmt.setBoolean(5, comunidad.isEsPublica());
+            stmt.setString(2, comunidad.getUsername().trim());
+            stmt.setString(3, comunidad.getDescripcion().trim());
+            stmt.setString(4, comunidad.getImagenUrl());
+            stmt.setInt(5, comunidad.getIdCreador());
+            stmt.setBoolean(6, comunidad.isEsPublica());
 
             int filasAfectadas = stmt.executeUpdate();
 
@@ -146,6 +147,47 @@ public class ComunidadDAO implements IComunidadDAO {
             System.err.println("❌ Error al eliminar comunidad: " + e.getMessage());
             e.printStackTrace();
         }
+        return false;
+    }
+
+    public boolean verificarUsernameDisponible(String username) {
+        String usernameNormalizado = username.toLowerCase().trim();
+
+        String sqlUsuarios = "SELECT COUNT(*) FROM usuarios WHERE LOWER(username) = ?";
+
+        String sqlComunidades = "SELECT COUNT(*) FROM comunidades WHERE LOWER(comunidad_username) = ?";
+
+        try (Connection conn = Conexion.getConexion()) {
+
+            try (PreparedStatement stmtUsuarios = conn.prepareStatement(sqlUsuarios)) {
+                stmtUsuarios.setString(1, usernameNormalizado);
+                ResultSet rsUsuarios = stmtUsuarios.executeQuery();
+
+                if (rsUsuarios.next() && rsUsuarios.getInt(1) > 0) {
+                    System.out.println("❌ Username '" + username + "' ya existe como usuario");
+                    return false;
+                }
+            }
+
+            try (PreparedStatement stmtComunidades = conn.prepareStatement(sqlComunidades)) {
+                stmtComunidades.setString(1, usernameNormalizado);
+                ResultSet rsComunidades = stmtComunidades.executeQuery();
+
+                if (rsComunidades.next() && rsComunidades.getInt(1) > 0) {
+                    System.out.println("❌ Username '" + username + "' ya existe como comunidad");
+                    return false;
+                }
+            }
+
+            System.out.println("✅ Username '" + username + "' está disponible globalmente");
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al verificar username globalmente: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // En caso de error, asumir que no está disponible por seguridad
         return false;
     }
 
@@ -562,6 +604,8 @@ public class ComunidadDAO implements IComunidadDAO {
         Comunidad comunidad = new Comunidad();
         comunidad.setIdComunidad(rs.getInt("id_comunidad"));
         comunidad.setNombre(rs.getString("nombre"));
+        comunidad.setUsername(rs.getString("comunidad_username"));
+
         comunidad.setDescripcion(rs.getString("descripcion"));
         comunidad.setImagenUrl(rs.getString("imagen_url"));
         comunidad.setIdCreador(rs.getInt("id_creador"));

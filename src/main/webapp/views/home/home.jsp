@@ -2212,7 +2212,6 @@
             function initializePostCreation() {
                 let selectedFile = null;
 
-                // Contador de caracteres
                 $('#postContent').on('input', function() {
                     const currentLength = $(this).val().length;
                     const maxLength = 999;
@@ -2232,18 +2231,15 @@
                     $('#inputImagen').click();
                 });
 
-                // Preview de imagen al seleccionar archivo
                 $('#inputImagen').change(function(e) {
                     const file = e.target.files[0];
 
                     if (file) {
-                        // Validar tipo de archivo
                         if (!file.type.startsWith('image/')) {
                             alert('Por favor selecciona un archivo de imagen válido.');
                             return;
                         }
 
-                        // Validar tamaño (máximo 5MB)
                         if (file.size > 5 * 1024 * 1024) {
                             alert('La imagen es muy grande. Máximo 5MB permitido.');
                             return;
@@ -2251,7 +2247,6 @@
 
                         selectedFile = file;
 
-                        // Crear preview
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             $('#imagePreview').attr('src', e.target.result);
@@ -2261,21 +2256,18 @@
                     }
                 });
 
-                // Remover imagen
                 $('#removeImageBtn').click(function() {
                     selectedFile = null;
                     $('#inputImagen').val('');
                     $('#imagePreviewContainer').fadeOut();
                 });
 
-            // Si quieres cambiar algo cuando selecciona una comunidad
             $('#communitySelect').on('change', function() {
                 var selectedValue = $(this).val();
                 var selectedText = $(this).find('option:selected').text();
 
                 if (selectedValue) {
                     console.log('Comunidad seleccionada:', selectedText);
-                    // Tal vez cambiar el placeholder o título del modal
                     $('#postModalLabel').text('Nueva Publicación en ' + selectedText.replace(/🛡️|🎯/, '').trim());
                 } else {
                     console.log('Feed principal seleccionado');
@@ -2283,27 +2275,21 @@
                 }
             });
 
-            // Función para procesar respuesta del HomeServlet
             function mostrarMensajeExito(response) {
-                // El servidor ya determinó todo - solo mostrar su mensaje
                 const mensaje = response.message || '¡Publicación creada exitosamente!';
 
-                // Actualizar el texto del mensaje en el modal
                 $('#successMessage').find('h6').text(mensaje);
                 $('#successMessage').show();
             }
 
             // Función principal para enviar formulario
             function submitFormWithResponse() {
-                // Mostrar loading
                 $('#loadingSpinner').css('display', 'flex');
                 $('#btnPublicar').prop('disabled', true);
                 $('.modern-form').hide();
 
-                // Preparar datos del formulario
                 const formData = new FormData($('#formCrearPost')[0]);
 
-                // Enviar via AJAX
                 $.ajax({
                     url: 'HomeServlet',
                     type: 'POST',
@@ -2313,22 +2299,16 @@
                     success: function(response) {
                         console.log('Respuesta del servidor:', response);
 
-                        // Ocultar loading
                         $('#loadingSpinner').hide();
 
-                        // Verificar si la respuesta es exitosa
                         if (response && response.success) {
-                            // Mostrar mensaje del servidor
                             mostrarMensajeExito(response);
 
-                            // Cerrar modal después de 3 segundos
                             setTimeout(function() {
                                 $('#postModal').modal('hide');
-                                // Recargar página
                                 window.location.reload();
                             }, 3000);
                         } else {
-                            // Error en la respuesta
                             $('.modern-form').show();
                             $('#btnPublicar').prop('disabled', false);
                             alert(response.message || 'Error al crear la publicación');
@@ -2350,7 +2330,6 @@
                                 errorMessage = errorResponse.message;
                             }
                         } catch (e) {
-                            // Usar mensaje por defecto si no es JSON
                         }
 
                         alert(errorMessage);
@@ -2358,7 +2337,6 @@
                 });
             }
 
-            // Conectar con el botón de publicar
             $(document).ready(function() {
                 $('#btnPublicar').off('click').on('click', function(e) {
                     e.preventDefault();
@@ -2377,22 +2355,17 @@
                         return;
                     }
 
-                    // Enviar formulario
                     submitFormWithResponse();
                 });
 
-                // Limpiar modal al cerrarse
                 $('#postModal').on('hidden.bs.modal', function() {
-                    // Resetear formulario
                     $('#formCrearPost')[0].reset();
                     $('#contadorCaracteres').text('0 / 999').removeClass('warning danger');
                     $('#postContent').removeClass('is-invalid');
 
-                    // Limpiar imagen
                     $('#imagePreviewContainer').hide();
                     $('#imageUploadZone').show();
 
-                    // Resetear estados
                     $('.modern-form').show();
                     $('#loadingSpinner').hide();
                     $('#successMessage').hide();

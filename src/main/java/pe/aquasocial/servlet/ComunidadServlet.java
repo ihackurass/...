@@ -158,6 +158,9 @@ public class ComunidadServlet extends HttpServlet {
                 case "createPost":
                     crearPublicacionEnComunidad(request, response);
                     break;
+                case "checkUsername":
+                    verificarUsernameDisponible(request, response);
+                    break;
                 default:
                     response.sendRedirect("ComunidadServlet");
                     break;
@@ -301,8 +304,6 @@ public class ComunidadServlet extends HttpServlet {
     private void mostrarFormularioCrear(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        Usuario usuarioActual = SessionUtil.getLoggedUser(request);
-
         request.getRequestDispatcher("/views/comunidades/create.jsp").forward(request, response);
     }
 
@@ -422,6 +423,81 @@ public class ComunidadServlet extends HttpServlet {
         }
     }
 
+    private void verificarUsernameDisponible(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+
+            String username = request.getParameter("username");
+
+            if (username == null || username.trim().isEmpty()) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("available", false);
+                respuesta.put("message", "Username vacío");
+                response.getWriter().write(respuesta.toString());
+                return;
+            }
+
+            username = username.trim();
+
+            if (username.length() < 3) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("available", false);
+                respuesta.put("message", "Muy corto (mínimo 3 caracteres)");
+                response.getWriter().write(respuesta.toString());
+                return;
+            }
+
+            if (username.length() > 50) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("available", false);
+                respuesta.put("message", "Muy largo (máximo 50 caracteres)");
+                response.getWriter().write(respuesta.toString());
+                return;
+            }
+
+            // Validar formato (solo letras, números y guiones bajos)
+            if (!username.matches("^[a-zA-Z0-9_]+$")) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("available", false);
+                respuesta.put("message", "Solo se permiten letras, números y guiones bajos");
+                response.getWriter().write(respuesta.toString());
+                return;
+            }
+
+            // Verificar disponibilidad globalmente (usuarios + comunidades)
+            boolean disponible = comunidadDAO.verificarUsernameDisponible(username);
+
+            JSONObject respuesta = new JSONObject();
+            respuesta.put("available", disponible);
+
+            if (disponible) {
+                respuesta.put("message", "@" + username + " está disponible");
+            } else {
+                respuesta.put("message", "@" + username + " ya está en uso");
+            }
+
+            response.getWriter().write(respuesta.toString());
+
+            System.out.println("✅ Verificación global de username: @" + username + " = "
+                    + (disponible ? "disponible" : "ocupado"));
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al verificar username globalmente: " + e.getMessage());
+            e.printStackTrace();
+
+            JSONObject respuesta = new JSONObject();
+            respuesta.put("available", false);
+            respuesta.put("message", "Error del servidor al verificar disponibilidad");
+
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write(respuesta.toString());
+        }
+    }
+
     /**
      * Verificar membresía vía AJAX
      */
@@ -477,10 +553,11 @@ public class ComunidadServlet extends HttpServlet {
 
             // Obtener parámetros
             String nombre = request.getParameter("nombre");
+            String username = request.getParameter("username"); // ⭐ NUEVO
             String descripcion = request.getParameter("descripcion");
             String esPublicaStr = request.getParameter("esPublica");
 
-            // Validaciones
+            // Validaciones básicas
             if (nombre == null || nombre.trim().isEmpty()) {
                 enviarRespuestaError(response, "El nombre de la comunidad es requerido", 400);
                 return;
@@ -491,6 +568,32 @@ public class ComunidadServlet extends HttpServlet {
                 return;
             }
 
+            // ⭐ NUEVAS: Validaciones de username
+            if (username == null || username.trim().isEmpty()) {
+                enviarRespuestaError(response, "El username de la comunidad es requerido", 400);
+                return;
+            }
+
+            username = username.trim();
+
+            if (username.length() < 3 || username.length() > 50) {
+                enviarRespuestaError(response, "El username debe tener entre 3 y 50 caracteres", 400);
+                return;
+            }
+
+            // Validar formato de username
+            if (!username.matches("^[a-zA-Z0-9_]+$")) {
+                enviarRespuestaError(response, "El username solo puede contener letras, números y guiones bajos", 400);
+                return;
+            }
+
+            // ⭐ NUEVA: Verificar disponibilidad global del username
+            if (!comunidadDAO.verificarUsernameDisponible(username)) {
+                enviarRespuestaError(response, "El username @" + username + " ya está en uso", 400);
+                return;
+            }
+
+            // Validaciones de descripción
             if (descripcion == null || descripcion.trim().isEmpty()) {
                 enviarRespuestaError(response, "La descripción es requerida", 400);
                 return;
@@ -525,22 +628,30 @@ public class ComunidadServlet extends HttpServlet {
                 }
             }
 
-            // Crear objeto comunidad
+            // ⭐ ACTUALIZADO: Crear objeto comunidad con username
             Comunidad nuevaComunidad = new Comunidad();
             nuevaComunidad.setNombre(nombre.trim());
+            nuevaComunidad.setUsername(username.toLowerCase().trim()); // ⭐ NUEVO - normalizar a minúsculas
             nuevaComunidad.setDescripcion(descripcion.trim());
             nuevaComunidad.setImagenUrl(imagenUrl);
             nuevaComunidad.setIdCreador(usuarioActual.getId());
             nuevaComunidad.setEsPublica("true".equals(esPublicaStr) || "on".equals(esPublicaStr));
 
+            // ⭐ NUEVA: Validación final antes de guardar
+            if (!nuevaComunidad.esValidaParaCrear()) {
+                enviarRespuestaError(response, "Los datos de la comunidad no son válidos", 400);
+                return;
+            }
+
             // Guardar en base de datos
             if (comunidadDAO.crear(nuevaComunidad)) {
-                System.out.println("✅ Comunidad creada: " + nombre + " por " + usuarioActual.getUsername());
+                System.out.println("✅ Comunidad creada: " + nombre + " (@" + username + ") por " + usuarioActual.getUsername());
 
                 JSONObject respuesta = new JSONObject();
                 respuesta.put("success", true);
                 respuesta.put("message", "¡Comunidad '" + nombre + "' creada exitosamente!");
                 respuesta.put("communityId", nuevaComunidad.getIdComunidad());
+                respuesta.put("communityUsername", nuevaComunidad.getUsername()); // ⭐ NUEVO
                 respuesta.put("redirectUrl", "ComunidadServlet?action=view&id=" + nuevaComunidad.getIdComunidad());
 
                 response.getWriter().write(respuesta.toString());

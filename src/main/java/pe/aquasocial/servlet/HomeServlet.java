@@ -338,9 +338,9 @@ public class HomeServlet extends HttpServlet {
 
             if (idComunidad != null) {
                 if (usuarioActual.isPrivilegio()) {
-                    autoAprobar = true; // Usuario privilegiado puede publicar en cualquier comunidad
+                    autoAprobar = true;
                 } else if (publicacionDAO.puedePublicarEnComunidad(usuarioActual.getId(), idComunidad)) {
-                    autoAprobar = true; // Es admin de esta comunidad específica
+                    autoAprobar = true;
                 }
             } else {
                 autoAprobar = usuarioActual.isPrivilegio();
@@ -419,13 +419,11 @@ public class HomeServlet extends HttpServlet {
                 System.out.println("✅ Nueva publicación creada por: " + usuarioActual.getUsername()
                         + (idComunidad != null ? " en comunidad " + idComunidad : " en feed principal"));
 
-                // Enviar respuesta de éxito
                 enviarRespuestaExito(response, mensaje, nuevaPublicacion);
 
             } else {
                 enviarRespuestaError(response, "Error al crear la publicación en la base de datos", 500);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
             enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
@@ -434,32 +432,25 @@ public class HomeServlet extends HttpServlet {
 
     private String guardarImagen(Part imagenPart, int userId) {
         try {
-            // Obtener extensión del archivo
             String fileName = imagenPart.getSubmittedFileName();
             String extension = "";
             if (fileName != null && fileName.contains(".")) {
                 extension = fileName.substring(fileName.lastIndexOf("."));
             }
 
-            // Generar nombre único para la imagen
             String nombreArchivo = "post_" + userId + "_" + System.currentTimeMillis() + extension;
 
-            // Definir carpeta de uploads (ajusta la ruta según tu proyecto)
             String uploadPath = getServletContext().getRealPath("/") + "assets/images/uploads/";
 
-            // Crear directorio si no existe
             File uploadDir = new File(uploadPath);
             if (!uploadDir.exists()) {
                 uploadDir.mkdirs();
             }
 
-            // Ruta completa del archivo
             String rutaCompleta = uploadPath + nombreArchivo;
 
-            // Guardar archivo
             imagenPart.write(rutaCompleta);
 
-            // Retornar URL relativa
             return "assets/images/uploads/" + nombreArchivo;
 
         } catch (Exception e) {

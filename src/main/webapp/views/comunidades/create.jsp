@@ -2,6 +2,10 @@
 <%@page import="pe.aquasocial.entity.Usuario"%>
 <%
     Usuario usuarioActual = (Usuario) session.getAttribute("usuarioLogueado");
+    if (usuarioActual == null) {
+        response.sendRedirect("LoginServlet");
+        return;
+    }
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -241,6 +245,91 @@
             margin-bottom: 20px;
             border: 1px solid #c3e6cb;
         }
+        
+        /* ============ ESTILOS PARA USERNAME ============ */
+        .input-group {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .input-group-prepend {
+            display: flex;
+        }
+
+        .input-group-text {
+            background: #e9ecef;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            height: auto;
+            line-height: normal;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            height: auto;
+            flex: 1;
+        }
+
+        .input-group .form-control:focus {
+            border-left: none;
+            box-shadow: none;
+        }
+
+        .input-group:focus-within .input-group-text {
+            border-color: #007bff;
+            background: rgba(0,123,255,0.1);
+        }
+
+        .input-group:focus-within {
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        
+        /* Validación de username */
+        .username-validation {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .username-validation.available {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .username-validation.taken {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .username-validation.checking {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            display: block;
+        }
+        
+        .username-validation.invalid {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
     </style>
 </head>
 
@@ -297,6 +386,33 @@
                             <div class="form-text">
                                 Elige un nombre descriptivo y fácil de recordar
                             </div>
+                        </div>
+                        
+                        <!-- Username de la comunidad -->
+                        <div class="form-group">
+                            <label for="username">
+                                <i class="fas fa-at"></i> Username de la Comunidad *
+                            </label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">@</span>
+                                </div>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="username" 
+                                       name="username" 
+                                       placeholder="fotografía_lovers"
+                                       maxlength="50"
+                                       pattern="[a-zA-Z0-9_]+"
+                                       required>
+                            </div>
+                            <div class="char-counter">
+                                <span id="usernameCounter">0</span>/50 caracteres
+                            </div>
+                            <div class="form-text">
+                                Solo letras, números y guiones bajos. Será único: @username
+                            </div>
+                            <div class="username-validation" id="usernameValidation"></div>
                         </div>
                         
                         <!-- Descripción -->
@@ -431,6 +547,24 @@
                 }
             });
             
+            // Contador para username
+            $('#username').on('input', function() {
+                const current = $(this).val().length;
+                const max = 50;
+                const counter = $('#usernameCounter');
+                
+                counter.text(current);
+                
+                if (current > max * 0.9) {
+                    counter.parent().addClass(current >= max ? 'danger' : 'warning');
+                } else {
+                    counter.parent().removeClass('warning danger');
+                }
+                
+                // Validar username en tiempo real
+                validateUsername($(this).val());
+            });
+            
             // Contador para descripción
             $('#descripcion').on('input', function() {
                 const current = $(this).val().length;
@@ -443,6 +577,78 @@
                     counter.parent().addClass(current >= max ? 'danger' : 'warning');
                 } else {
                     counter.parent().removeClass('warning danger');
+                }
+            });
+        }
+        
+        // Validación de username
+        let usernameTimeout;
+        function validateUsername(username) {
+            const validation = $('#usernameValidation');
+            
+            // Limpiar timeout anterior
+            if (usernameTimeout) {
+                clearTimeout(usernameTimeout);
+            }
+            
+            // Si está vacío, ocultar validación
+            if (!username || username.length < 3) {
+                validation.hide().removeClass('available taken checking invalid');
+                return;
+            }
+            
+            // Validar formato
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                validation.removeClass('available taken checking')
+                         .addClass('invalid')
+                         .html('<i class="fas fa-times"></i> Solo se permiten letras, números y guiones bajos')
+                         .show();
+                return;
+            }
+            
+            // Mostrar "verificando"
+            validation.removeClass('available taken invalid')
+                     .addClass('checking')
+                     .html('<i class="fas fa-spinner fa-spin"></i> Verificando disponibilidad...')
+                     .show();
+            
+            // Verificar disponibilidad después de 500ms
+            usernameTimeout = setTimeout(() => {
+                checkUsernameAvailability(username);
+            }, 500);
+        }
+        
+        // Verificar disponibilidad del username
+        function checkUsernameAvailability(username) {
+            $.ajax({
+                url: 'ComunidadServlet',
+                type: 'POST',
+                data: {
+                    action: 'checkUsername',
+                    username: username
+                },
+                success: function(response) {
+                    const validation = $('#usernameValidation');
+                    
+                    if (response && response.available) {
+                        validation.removeClass('taken checking invalid')
+                                 .addClass('available')
+                                 .html('<i class="fas fa-check"></i> @' + username + ' está disponible')
+                                 .show();
+                    } else {
+                        validation.removeClass('available checking invalid')
+                                 .addClass('taken')
+                                 .html('<i class="fas fa-times"></i> @' + username + ' ya está en uso')
+                                 .show();
+                    }
+                },
+                error: function() {
+                    const validation = $('#usernameValidation');
+                    validation.removeClass('available checking invalid')
+                             .addClass('taken')
+                             .html('<i class="fas fa-exclamation-triangle"></i> Error al verificar disponibilidad')
+                             .show();
                 }
             });
         }
@@ -536,6 +742,30 @@
             if (nombre.length < 3) {
                 showError('El nombre debe tener al menos 3 caracteres');
                 $('#nombre').focus();
+                return false;
+            }
+            
+            // Validar username
+            const username = $('#username').val().trim();
+            if (username.length < 3) {
+                showError('El username debe tener al menos 3 caracteres');
+                $('#username').focus();
+                return false;
+            }
+            
+            // Validar formato de username
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                showError('El username solo puede contener letras, números y guiones bajos');
+                $('#username').focus();
+                return false;
+            }
+            
+            // Verificar que el username esté disponible
+            const validation = $('#usernameValidation');
+            if (!validation.hasClass('available')) {
+                showError('Debes elegir un username disponible');
+                $('#username').focus();
                 return false;
             }
             

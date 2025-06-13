@@ -12,6 +12,7 @@ public class Comunidad {
     // Atributos principales
     private int idComunidad;
     private String nombre;
+    private String username;
     private String descripcion;
     private String imagenUrl;
     private int idCreador;
@@ -20,7 +21,6 @@ public class Comunidad {
     private int seguidoresCount;
     private int publicacionesCount;
     
-    // Datos adicionales para vistas (no en BD)
     private String nombreCreador;
     private String usernameCreador;
     private String avatarCreador;
@@ -43,15 +43,20 @@ public class Comunidad {
         this.idCreador = idCreador;
     }
     
-    public Comunidad(int idComunidad, String nombre, String descripcion, String imagenUrl, 
-                     int idCreador, boolean esPublica) {
+    public Comunidad(String nombre, String username, String descripcion, int idCreador) {
         this(nombre, descripcion, idCreador);
+        this.username = username;
+    }
+    
+    public Comunidad(int idComunidad, String nombre, String username, String descripcion, String imagenUrl, 
+                     int idCreador, boolean esPublica) {
+        this(nombre, username, descripcion, idCreador);
         this.idComunidad = idComunidad;
         this.imagenUrl = imagenUrl;
         this.esPublica = esPublica;
     }
     
-    // Getters y Setters
+    // Getters y Setters básicos
     public int getIdComunidad() {
         return idComunidad;
     }
@@ -66,6 +71,15 @@ public class Comunidad {
     
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+    
+    // ⭐ NUEVO: Getter y Setter para username
+    public String getUsername() {
+        return username;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
     }
     
     public String getDescripcion() {
@@ -124,7 +138,7 @@ public class Comunidad {
         this.publicacionesCount = publicacionesCount;
     }
     
-    // Datos adicionales para vistas
+    // Getters y Setters para datos adicionales
     public String getNombreCreador() {
         return nombreCreador;
     }
@@ -173,7 +187,26 @@ public class Comunidad {
         this.usuarioEsCreador = usuarioEsCreador;
     }
     
-    // Métodos de utilidad
+    // ⭐ NUEVOS: Métodos utilitarios para username
+    public String getUsernameCompleto() {
+        return username != null ? "@" + username : "";
+    }
+    
+    public String getUsernameSeguro() {
+        if (username == null || username.trim().isEmpty()) {
+            return "comunidad_" + idComunidad;
+        }
+        return username;
+    }
+    
+    public boolean esUsernameValido() {
+        return username != null && 
+               username.trim().length() >= 3 && 
+               username.trim().length() <= 50 &&
+               username.matches("^[a-zA-Z0-9_]+$");
+    }
+    
+    // Métodos utilitarios existentes (mantenidos)
     public String getFechaCreacionFormateada() {
         if (fechaCreacion != null) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -188,11 +221,14 @@ public class Comunidad {
             long dias = java.time.Duration.between(fechaCreacion, ahora).toDays();
             
             if (dias == 0) {
-                return "Hoy";
-            } else if (dias == 1) {
-                return "Ayer";
+                long horas = java.time.Duration.between(fechaCreacion, ahora).toHours();
+                if (horas == 0) {
+                    long minutos = java.time.Duration.between(fechaCreacion, ahora).toMinutes();
+                    return "hace " + minutos + " min";
+                }
+                return "hace " + horas + " h";
             } else if (dias < 7) {
-                return "hace " + dias + " días";
+                return "hace " + dias + " día" + (dias > 1 ? "s" : "");
             } else if (dias < 30) {
                 long semanas = dias / 7;
                 return "hace " + semanas + " semana" + (semanas > 1 ? "s" : "");
@@ -233,12 +269,21 @@ public class Comunidad {
                descripcion.trim().length() <= 1000;
     }
     
-    // Override toString para debugging
+    // ⭐ NUEVO: Método de validación completa
+    public boolean esValidaParaCrear() {
+        return esNombreValido() && 
+               esDescripcionValida() && 
+               esUsernameValido() &&
+               idCreador > 0;
+    }
+    
+    // Override toString para debugging (actualizado)
     @Override
     public String toString() {
         return "Comunidad{" +
                 "idComunidad=" + idComunidad +
                 ", nombre='" + nombre + '\'' +
+                ", username='" + username + '\'' +
                 ", creador=" + idCreador +
                 ", seguidores=" + seguidoresCount +
                 ", publicaciones=" + publicacionesCount +
@@ -246,7 +291,7 @@ public class Comunidad {
                 '}';
     }
     
-    // Override equals y hashCode
+    // Override equals y hashCode (sin cambios)
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
