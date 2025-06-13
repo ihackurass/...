@@ -334,11 +334,16 @@ public class HomeServlet extends HttpServlet {
                 }
             }
 
-            // ⭐ ACTUALIZAR LÓGICA DE AUTO-APROBACIÓN:
             boolean autoAprobar = false;
-            if (usuarioActual.isPrivilegio()
-                    || comunidadDAO.esAdminDeAlgunaComunidad(usuarioActual.getId())) {
-                autoAprobar = true;
+
+            if (idComunidad != null) {
+                if (usuarioActual.isPrivilegio()) {
+                    autoAprobar = true; // Usuario privilegiado puede publicar en cualquier comunidad
+                } else if (publicacionDAO.puedePublicarEnComunidad(usuarioActual.getId(), idComunidad)) {
+                    autoAprobar = true; // Es admin de esta comunidad específica
+                }
+            } else {
+                autoAprobar = usuarioActual.isPrivilegio();
             }
             // Procesar donaciones
             boolean permiteDonacion = false;
@@ -368,33 +373,46 @@ public class HomeServlet extends HttpServlet {
 
                 // ⭐ ACTUALIZAR MENSAJE DE ÉXITO:
                 String mensaje;
+
                 if (idComunidad != null) {
+                    // PUBLICACIÓN EN COMUNIDAD
                     Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
                     String nombreComunidad = comunidad != null ? comunidad.getNombre() : "la comunidad";
 
                     if (autoAprobar) {
-                        if (usuarioActual.isPrivilegio() && !comunidadDAO.esAdminDeComunidad(usuarioActual.getId(), idComunidad)) {
-                            mensaje = "¡Publicación creada en " + nombreComunidad + "! Aprobada automáticamente por tus privilegios.";
+                        if (usuarioActual.isPrivilegio()) {
+                            // Usuario privilegiado publicando en comunidad
+                            if (comunidadDAO.esAdminDeComunidad(usuarioActual.getId(), idComunidad)) {
+                                mensaje = "¡Publicación creada en " + nombreComunidad + "! Aprobada automáticamente como administrador.";
+                            } else {
+                                mensaje = "¡Publicación creada en " + nombreComunidad + "! Aprobada automáticamente por tus privilegios.";
+                            }
                         } else {
+                            // Admin de la comunidad (sin privilegios globales)
                             mensaje = "¡Publicación creada en " + nombreComunidad + "! Aprobada automáticamente como administrador.";
                         }
                     } else {
+                        // No se auto-aprueba (usuario normal en comunidad)
                         mensaje = "¡Publicación creada en " + nombreComunidad + "! Pendiente de aprobación.";
                     }
 
-                    // Actualizar contador de publicaciones
+                    // Actualizar contador de publicaciones de la comunidad
                     comunidadDAO.actualizarContadorPublicaciones(idComunidad);
 
                 } else {
-                    // Publicación en feed principal
+                    // PUBLICACIÓN EN FEED PRINCIPAL
                     if (autoAprobar) {
-                        if (usuarioActual.isPrivilegio()) {
-                            mensaje = "¡Publicación creada y aprobada automáticamente!";
-                        } else {
-                            mensaje = "¡Publicación creada como administrador! Se publicó automáticamente.";
-                        }
+                        // SOLO usuarios privilegiados llegan aquí
+                        mensaje = "¡Publicación creada y aprobada automáticamente en el feed principal!";
                     } else {
-                        mensaje = "¡Publicación creada! Pendiente de aprobación por un moderador.";
+                        // Usuarios normales Y administradores de comunidades
+                        boolean esAdminComunidades = comunidadDAO.esAdminDeAlgunaComunidad(usuarioActual.getId());
+
+                        if (esAdminComunidades) {
+                            mensaje = "¡Publicación creada! Tus publicaciones en el feed principal requieren aprobación.";
+                        } else {
+                            mensaje = "¡Publicación creada! Pendiente de aprobación por un moderador.";
+                        }
                     }
                 }
 

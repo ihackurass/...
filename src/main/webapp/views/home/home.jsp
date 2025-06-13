@@ -733,7 +733,7 @@
                 }
                 
                 .modal-dialog {
-                    max-width: 500px;
+                    max-width: 700px;
                 }
 
                 .form-control:focus {
@@ -1051,7 +1051,465 @@
                         padding: 15px;
                     }
                 }
-                
+
+    /* ============== MODAL MODERNO - BASE ============== */
+    .modal-modern {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        overflow: hidden;
+    }
+
+    /* ============== HEADER ============== */
+    .modal-header-gradient {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        padding: 25px 30px;
+        position: relative;
+    }
+
+    .modal-header-content {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .modal-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+
+    .modal-icon i {
+        font-size: 20px;
+        color: white;
+    }
+
+    .modal-title-section h5 {
+        color: white;
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .modal-subtitle {
+        color: rgba(255,255,255,0.8);
+        margin: 0;
+        font-size: 13px;
+    }
+
+    .close-modern {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        border-radius: 10px;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+    .close-modern:hover {
+        background: rgba(255,255,255,0.3);
+        transform: scale(1.1);
+    }
+
+    /* ============== BODY ============== */
+    .modal-body-modern {
+        padding: 30px;
+        background: #f8f9fa;
+    }
+
+    .modern-form {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    /* ============== FORM GROUPS ============== */
+    .form-group-modern {
+        margin-bottom: 25px;
+    }
+
+    .form-label-modern {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+    }
+
+    .form-label-modern i {
+        margin-right: 8px;
+        color: #007bff;
+        width: 16px;
+    }
+
+    .form-control-modern {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 12px 15px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        width: 100%;
+        resize: vertical;
+    }
+
+    .form-control-modern:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
+        outline: none;
+    }
+
+    .form-help-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    /* ============== CONTADOR DE CARACTERES ============== */
+    .char-counter-modern {
+        text-align: right;
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+
+    .char-counter-modern.warning {
+        color: #ffc107;
+    }
+
+    .char-counter-modern.danger {
+        color: #dc3545;
+    }
+
+    /* ============== UPLOAD DE IMAGEN ============== */
+    .image-upload-zone {
+        border: 2px dashed #ddd;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .image-upload-zone:hover {
+        border-color: #007bff;
+        background: rgba(0,123,255,0.05);
+    }
+
+    .image-upload-zone.dragover {
+        border-color: #007bff;
+        background: rgba(0,123,255,0.1);
+    }
+
+    .upload-content h6 {
+        color: #495057;
+        margin: 10px 0 5px;
+        font-weight: 600;
+    }
+
+    .upload-hint {
+        color: #6c757d;
+        font-size: 12px;
+        margin-bottom: 15px;
+    }
+
+    .upload-icon {
+        font-size: 32px;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+
+    .btn-upload {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-upload:hover {
+        background: #0056b3;
+        transform: translateY(-1px);
+    }
+
+    /* ============== PREVIEW DE IMAGEN ============== */
+    .image-preview-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-top: 15px;
+    }
+
+    .image-preview-modern {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .remove-image-btn-modern {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 25px;
+        height: 25px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(220,53,69,0.3);
+    }
+
+    .remove-image-btn-modern:hover {
+        background: #c82333;
+        transform: scale(1.1);
+    }
+
+    /* ============== CHECKBOX MODERNO ============== */
+    .checkbox-modern {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .checkbox-modern.disabled {
+        opacity: 0.6;
+    }
+
+    .checkbox-input {
+        display: none;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 14px;
+        color: #495057;
+    }
+
+    .checkbox-custom {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        margin-right: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .checkbox-input:checked + .checkbox-label .checkbox-custom {
+        background: #007bff;
+        border-color: #007bff;
+    }
+
+    .checkbox-input:checked + .checkbox-label .checkbox-custom::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .checkbox-text i:first-child {
+        margin-right: 6px;
+        color: #007bff;
+    }
+
+    /* ============== LOADING MODERNO ============== */
+    .loading-modern {
+        text-align: center;
+        padding: 40px 20px;
+        display: none;
+    }
+
+    .spinner-modern {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .spinner-circle {
+        width: 12px;
+        height: 12px;
+        background: #007bff;
+        border-radius: 50%;
+        margin: 0 3px;
+        animation: spinner-bounce 1.4s ease-in-out infinite both;
+    }
+
+    .spinner-circle:nth-child(1) { animation-delay: -0.32s; }
+    .spinner-circle:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes spinner-bounce {
+        0%, 80%, 100% {
+            transform: scale(0);
+        }
+        40% {
+            transform: scale(1);
+        }
+    }
+
+    .loading-modern h6 {
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    .loading-modern p {
+        color: #6c757d;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    /* ============== SUCCESS MODERNO ============== */
+    .success-modern {
+        text-align: center;
+        padding: 40px 20px;
+        display: none;
+    }
+
+    .success-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        animation: success-pulse 1s ease-out;
+    }
+
+    .success-icon i {
+        font-size: 32px;
+        color: white;
+    }
+
+    @keyframes success-pulse {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .success-modern h6 {
+        color: #28a745;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+
+    .success-modern p {
+        color: #6c757d;
+        margin: 0;
+    }
+
+    /* ============== FOOTER ============== */
+    .modal-footer-modern {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+    }
+
+    .btn-modern {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .btn-modern.btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-modern.btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(108,117,125,0.3);
+    }
+
+    .btn-modern.btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+    }
+
+    .btn-modern.btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    }
+
+    .btn-modern:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    /* ============== RESPONSIVE ============== */
+    @media (max-width: 768px) {
+        .modal-dialog {
+            margin: 10px;
+        }
+        
+        .modal-body-modern {
+            padding: 20px;
+        }
+        
+        .modern-form {
+            padding: 20px;
+        }
+        
+        .modal-header-gradient {
+            padding: 20px;
+        }
+        
+        .modal-footer-modern {
+            padding: 15px 20px;
+            flex-direction: column;
+        }
+        
+        .btn-modern {
+            flex: none;
+        }
+    }
         </style>
     </head>
 
@@ -1149,131 +1607,163 @@
                    </div>
                </div>
            </div>   
-        <div class="modal fade" id="postModal" tabindex="-1" role="dialog" aria-labelledby="postModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="postModalLabel">Crear Nuevo Post</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="formCrearPost">
-                            <input type="hidden" name="action" value="createPost">
-                            <input type="hidden" name="idUsuario" value="<%= usuarioActual != null ? usuarioActual.getId() : "" %>">
-
-                            <!-- Textarea para el contenido -->
-                            <div class="form-group">
-                                <textarea class="form-control" id="postContent" name="texto" rows="4"
-                                          placeholder="¿Qué está pasando?" required></textarea>
+            <div class="modal fade" id="postModal" tabindex="-1" role="dialog" aria-labelledby="postModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                    <div class="modal-content modal-modern">
+                        <!-- Header mejorado -->
+                        <div class="modal-header modal-header-gradient">
+                            <div class="modal-header-content">
+                                <div class="modal-icon">
+                                    <i class="fas fa-edit"></i>
+                                </div>
+                                <div class="modal-title-section">
+                                    <h5 class="modal-title" id="postModalLabel">Crear Nueva Publicación</h5>
+                                    <p class="modal-subtitle">Comparte algo interesante con la comunidad</p>
+                                </div>
                             </div>
+                            <button type="button" class="close-modern" data-dismiss="modal" aria-label="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
 
-                            <!-- ⭐ NUEVA SECCIÓN: Dropdown de comunidades SI es admin -->
-                            <% if (puedeAdministrarComunidades && comunidadesQueAdministra != null && !comunidadesQueAdministra.isEmpty()) { %>
-                                <div class="form-group">
-                                    <label for="communitySelect">
+                        <div class="modal-body modal-body-modern">
+                            <form id="formCrearPost" class="modern-form">
+                                <input type="hidden" name="action" value="createPost">
+                                <input type="hidden" name="idUsuario" value="<%= usuarioActual != null ? usuarioActual.getId() : "" %>">
+
+                                <!-- Textarea para el contenido -->
+                                <div class="form-group-modern">
+                                    <label for="postContent" class="form-label-modern">
+                                        <i class="fas fa-pen-fancy"></i> ¿Qué quieres compartir?
+                                    </label>
+                                    <textarea class="form-control-modern" 
+                                              id="postContent" 
+                                              name="texto" 
+                                              rows="4"
+                                              placeholder="Escribe algo interesante, comparte una reflexión o cuenta tu experiencia..."
+                                              maxlength="999"
+                                              required></textarea>
+                                    <div class="char-counter-modern">
+                                        <span id="contadorCaracteres">0</span>/999 caracteres
+                                    </div>
+                                </div>
+
+                                <!-- Sección de comunidades (si aplica) -->
+                                <% if (puedeAdministrarComunidades && comunidadesQueAdministra != null && !comunidadesQueAdministra.isEmpty()) { %>
+                                <div class="form-group-modern">
+                                    <label for="communitySelect" class="form-label-modern">
                                         <i class="fas fa-users"></i> Publicar en:
                                     </label>
-                                    <select class="form-control" id="communitySelect" name="idComunidad">
+                                    <select class="form-control-modern" id="communitySelect" name="idComunidad">
                                         <option value="">📍 Feed Principal (Público)</option>
                                         <% for (Comunidad comunidad : comunidadesQueAdministra) { %>
                                             <option value="<%= comunidad.getIdComunidad() %>">
-                                                🛡️ <%= comunidad.getNombre() %> (como admin)
+                                                🛡️ <%= comunidad.getNombre() %>
                                             </option>
                                         <% } %>
                                     </select>
-                                    <small class="form-text text-muted">
+                                    <div class="form-help-text">
                                         Como administrador, puedes publicar directamente en estas comunidades
-                                    </small>
+                                    </div>
                                 </div>
-                            <% } %>
+                                <% } %>
 
-                            <!-- Botón para subir imagen (sin cambios) -->
-                            <div class="form-group text-left">
-                                <div class="upload-btn-container">
-                                    <button type="button" class="btn btn-primary" id="btnSubirImagen">
-                                        <i class="fas fa-image"></i> Subir Imagen
-                                    </button>
-                                    <input type="file" id="inputImagen" name="imagen" accept="image/*" style="display:none">
-                                </div>
-                            </div>
-
-                            <!-- Contenedor para preview de imagen (sin cambios) -->
-                            <div class="image-preview-container" id="imagePreviewContainer">
-                                <button type="button" class="remove-image-btn" id="removeImageBtn">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                <img id="imagePreview" class="image-preview" src="" alt="Preview">
-                            </div>
-
-                            <!-- ⭐ ACTUALIZAR la lógica del checkbox de donaciones -->
-                            <% if(tienePrivilegios) { %>
-                                <div class="form-group form-check">
-                                    <input type="checkbox" class="form-check-input" id="receiveMoney" name="permiteDonacion">
-                                    <label class="form-check-label" for="receiveMoney">
-                                        <i class="fas fa-gift"></i> ¿Recibir donaciones?
+                                <!-- Upload de imagen mejorado -->
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-image"></i> Agregar imagen (opcional)
                                     </label>
-                                    <small class="form-text text-muted">
-                                        Solo usuarios privilegiados pueden recibir donaciones
-                                    </small>
-                                </div>
-                            <% } else { %>
-                                <div class="form-group form-check privilege-tooltip">
-                                    <input type="checkbox" class="form-check-input" id="receiveMoney" disabled>
-                                    <label class="form-check-label" for="receiveMoney">
-                                        <i class="fas fa-gift"></i> ¿Recibir donaciones?
-                                    </label>
-                                    <span class="tooltip-text">
-                                        Necesitas ser un usuario privilegiado para habilitar esta opción. 
-                                        Los administradores de comunidades pueden auto-aprobar publicaciones pero no recibir donaciones.
-                                    </span>
-                                </div>
-                            <% } %>
+                                    <div class="image-upload-zone" id="imageUploadZone">
+                                        <div class="upload-content">
+                                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                            <h6>Arrastra una imagen o haz clic para seleccionar</h6>
+                                            <p class="upload-hint">Formatos: JPG, PNG, GIF. Máximo 5MB</p>
+                                            <button type="button" class="btn-upload" id="btnSubirImagen">
+                                                <i class="fas fa-plus"></i> Seleccionar Imagen
+                                            </button>
+                                        </div>
+                                        <input type="file" id="inputImagen" name="imagen" accept="image/*" style="display:none">
+                                    </div>
 
-                            <div class="text-right">
-                                <small class="text-muted" id="contadorCaracteres">0 / 999</small>
-                            </div>
-                        </form>
+                                    <!-- Preview de imagen -->
+                                    <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+                                        <div class="image-preview-wrapper">
+                                            <img id="imagePreview" class="image-preview-modern" src="" alt="Preview">
+                                            <button type="button" class="remove-image-btn-modern" id="removeImageBtn">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- Loading spinner (sin cambios) -->
-                        <div class="loading-spinner" id="loadingSpinner">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="sr-only">Publicando...</span>
+                                <!-- Configuración de donaciones -->
+                                <% if(tienePrivilegios) { %>
+                                <div class="form-group-modern">
+                                    <div class="checkbox-modern">
+                                        <input type="checkbox" class="checkbox-input" id="receiveMoney" name="permiteDonacion">
+                                        <label class="checkbox-label" for="receiveMoney">
+                                            <span class="checkbox-custom"></span>
+                                            <span class="checkbox-text">
+                                                <i class="fas fa-gift"></i> Permitir donaciones en esta publicación
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div class="form-help-text">
+                                        Los usuarios podrán apoyarte económicamente si les gusta tu contenido
+                                    </div>
+                                </div>
+                                <% } else { %>
+                                <div class="form-group-modern">
+                                    <div class="checkbox-modern disabled">
+                                        <input type="checkbox" class="checkbox-input" id="receiveMoney" disabled>
+                                        <label class="checkbox-label" for="receiveMoney">
+                                            <span class="checkbox-custom"></span>
+                                            <span class="checkbox-text">
+                                                <i class="fas fa-gift"></i> Permitir donaciones 
+                                                <i class="fas fa-lock text-muted" title="Función solo para usuarios privilegiados"></i>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div class="form-help-text">
+                                        Necesitas ser un usuario privilegiado para habilitar esta opción
+                                    </div>
+                                </div>
+                                <% } %>
+                            </form>
+
+                            <!-- Loading spinner mejorado -->
+                            <div class="loading-modern" id="loadingSpinner" style="display: none;">
+                                <div class="spinner-modern">
+                                    <div class="spinner-circle"></div>
+                                    <div class="spinner-circle"></div>
+                                    <div class="spinner-circle"></div>
+                                </div>
+                                <h6>Publicando tu contenido...</h6>
+                                <p>Por favor espera un momento</p>
                             </div>
-                            <p class="mt-2">Publicando tu post...</p>
+
+                            <!-- Mensaje de éxito mejorado -->
+                            <div class="success-modern" id="successMessage" style="display: none;">
+                                <div class="success-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <h6>¡Publicación creada exitosamente!</h6>
+                                <p>Tu contenido se ha compartido con la comunidad</p>
+                            </div>
                         </div>
 
-                        <!-- ⭐ ACTUALIZAR mensajes de éxito según tipo de usuario -->
-                        <% if(tienePrivilegios) { %>
-                            <div class="success-message" id="successMessage">
-                                <i class="fas fa-check-circle fa-3x text-success"></i>
-                                <p class="mt-2">¡Post publicado exitosamente!</p>
-                            </div>
-                        <% } else if(puedeAdministrarComunidades) { %>
-                            <div class="success-message" id="successMessage">
-                                <i class="fas fa-shield-alt fa-3x text-info"></i>
-                                <p class="mt-2">¡Post publicado como administrador!</p>
-                            </div>
-                        <% } else { %>
-                            <div class="warning-message" id="successMessage">
-                                <i class="fas fa-clock fa-3x text-warning"></i>
-                                <p class="mt-2">¡Post esperando aprobación!</p>
-                            </div>
-                        <% } %>
-                    </div>
-
-                    <div class="modal-footer d-flex justify-content-center">
-                        <button type="button" class="btn btn-secondary me-3" data-dismiss="modal">
-                            <i class="fas fa-times-circle"></i> Cancelar
-                        </button>
-                        <button type="button" class="btn btn-success ms-3" id="btnPublicar">
-                            <i class="fas fa-check-circle"></i> Publicar
-                        </button>
+                        <!-- Footer mejorado -->
+                        <div class="modal-footer modal-footer-modern">
+                            <button type="button" class="btn-modern btn-secondary" data-dismiss="modal">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                            <button type="button" class="btn-modern btn-primary" id="btnPublicar">
+                                <i class="fas fa-paper-plane"></i> Publicar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         
         <!-- Modal de Donación - Adaptado para Checkout Pro -->
         <div class="modal fade" id="donationModal" tabindex="-1" role="dialog" aria-labelledby="donationModalLabel" aria-hidden="true">
@@ -1792,105 +2282,123 @@
                     $('#postModalLabel').text('Nueva Publicación');
                 }
             });
-                // Publicar post con Ajax
-                $('#btnPublicar').click(function() {
-                    const texto = $('#postContent').val().trim();
 
-                    // Validaciones
-                    if (texto === '') {
-                        alert('Por favor escribe algo antes de publicar.');
+            // Función para procesar respuesta del HomeServlet
+            function mostrarMensajeExito(response) {
+                // El servidor ya determinó todo - solo mostrar su mensaje
+                const mensaje = response.message || '¡Publicación creada exitosamente!';
+
+                // Actualizar el texto del mensaje en el modal
+                $('#successMessage').find('h6').text(mensaje);
+                $('#successMessage').show();
+            }
+
+            // Función principal para enviar formulario
+            function submitFormWithResponse() {
+                // Mostrar loading
+                $('#loadingSpinner').css('display', 'flex');
+                $('#btnPublicar').prop('disabled', true);
+                $('.modern-form').hide();
+
+                // Preparar datos del formulario
+                const formData = new FormData($('#formCrearPost')[0]);
+
+                // Enviar via AJAX
+                $.ajax({
+                    url: 'HomeServlet',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        console.log('Respuesta del servidor:', response);
+
+                        // Ocultar loading
+                        $('#loadingSpinner').hide();
+
+                        // Verificar si la respuesta es exitosa
+                        if (response && response.success) {
+                            // Mostrar mensaje del servidor
+                            mostrarMensajeExito(response);
+
+                            // Cerrar modal después de 3 segundos
+                            setTimeout(function() {
+                                $('#postModal').modal('hide');
+                                // Recargar página
+                                window.location.reload();
+                            }, 3000);
+                        } else {
+                            // Error en la respuesta
+                            $('.modern-form').show();
+                            $('#btnPublicar').prop('disabled', false);
+                            alert(response.message || 'Error al crear la publicación');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error al publicar:', error);
+
+                        // Ocultar loading y mostrar formulario
+                        $('#loadingSpinner').hide();
+                        $('.modern-form').show();
+                        $('#btnPublicar').prop('disabled', false);
+
+                        // Mostrar error
+                        let errorMessage = 'Error al publicar el post. Intenta de nuevo.';
+                        try {
+                            const errorResponse = JSON.parse(xhr.responseText);
+                            if (errorResponse.message) {
+                                errorMessage = errorResponse.message;
+                            }
+                        } catch (e) {
+                            // Usar mensaje por defecto si no es JSON
+                        }
+
+                        alert(errorMessage);
+                    }
+                });
+            }
+
+            // Conectar con el botón de publicar
+            $(document).ready(function() {
+                $('#btnPublicar').off('click').on('click', function(e) {
+                    e.preventDefault();
+
+                    // Validaciones básicas
+                    const contenido = $('#postContent').val().trim();
+                    if (contenido.length === 0) {
+                        alert('Por favor escribe algo antes de publicar');
                         $('#postContent').focus();
                         return;
                     }
 
-                    if (texto.length > 999) {
-                        alert('El texto es muy largo. Máximo 999 caracteres.');
+                    if (contenido.length > 999) {
+                        alert('El contenido es muy largo. Máximo 999 caracteres');
+                        $('#postContent').focus();
                         return;
                     }
 
-                    // Mostrar loading
-                    $('.modal-body form').hide();
-                    $('#loadingSpinner').show();
-                    $(this).prop('disabled', true);
-
-                    // Crear FormData para enviar archivo
-                    const formData = new FormData();
-                    formData.append('action', 'createPost');
-                    formData.append('idUsuario', $('input[name="idUsuario"]').val());
-                    formData.append('texto', texto);
-                    formData.append('permiteDonacion', $('#receiveMoney').is(':checked') ? '1' : '0');
-                    formData.append('idComunidad', $('#communitySelect').val());
-
-                    if (selectedFile) {
-                        formData.append('imagen', selectedFile);
-                    }
-
-                    // Enviar con Ajax
-                    $.ajax({
-                        url: 'HomeServlet', // Cambia por tu URL
-                        type: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            console.log('Respuesta del servidor:', response);
-
-                            // Mostrar mensaje de éxito
-                            $('#loadingSpinner').hide();
-                            $('#successMessage').show();
-
-                            // Cerrar modal después de 4 segundos
-                            setTimeout(function() {
-                                $('#postModal').modal('hide');
-
-                                // Aquí puedes recargar la página o actualizar la lista de posts
-                                window.location.reload();
-
-                            }, 4000);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('Error al publicar:', error);
-
-                            $('#loadingSpinner').hide();
-                            $('.modal-body form').show();
-                            $('#btnPublicar').prop('disabled', false);
-
-                            // Mostrar error específico si está disponible
-                            let errorMessage = 'Error al publicar el post. Intenta de nuevo.';
-
-                            try {
-                                const errorResponse = JSON.parse(xhr.responseText);
-                                if (errorResponse.message) {
-                                    errorMessage = errorResponse.message;
-                                }
-                            } catch (e) {
-                                // Si no es JSON, usar mensaje por defecto
-                            }
-
-                            alert(errorMessage);
-                        }
-                    });
-                    $('#postContent').val("");
+                    // Enviar formulario
+                    submitFormWithResponse();
                 });
 
                 // Limpiar modal al cerrarse
                 $('#postModal').on('hidden.bs.modal', function() {
                     // Resetear formulario
                     $('#formCrearPost')[0].reset();
-                    $('#contadorCaracteres').text('0 / 999');
-                    $('#contadorCaracteres').removeClass('text-danger');
+                    $('#contadorCaracteres').text('0 / 999').removeClass('warning danger');
                     $('#postContent').removeClass('is-invalid');
 
                     // Limpiar imagen
-                    selectedFile = null;
                     $('#imagePreviewContainer').hide();
+                    $('#imageUploadZone').show();
 
                     // Resetear estados
-                    $('.modal-body form').show();
+                    $('.modern-form').show();
                     $('#loadingSpinner').hide();
                     $('#successMessage').hide();
                     $('#btnPublicar').prop('disabled', false);
                 });
+            });
             }
 
             // ========== SISTEMA DE LIKES ==========
@@ -2267,9 +2775,7 @@
                     });
             }
 
-            /**
-             * Cerrar toast específico
-             */
+
             function closeToast(toastId) {
                 var toast = $('#' + toastId);
                 if (toast.length) {
@@ -2289,9 +2795,6 @@
                 }
             }
 
-            /**
-             * Limpiar todos los toasts
-             */
             function clearAllToasts() {
                 $('.toast-notification').each(function() {
                     var id = $(this).attr('id');
@@ -2321,6 +2824,7 @@
                            .replace(/\n/g, '\\n')
                            .replace(/\r/g, '\\r');
             }
+
 
 
             function editarComentario(idComentario, contenidoActual) {

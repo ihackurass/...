@@ -30,12 +30,17 @@ public class PublicacionDAO implements IPublicacionDAO {
             stmt.setBoolean(4, publicacion.isPermiteDonacion());
             stmt.setBoolean(5, publicacion.isEstaAprobado());
             stmt.setTimestamp(6, Timestamp.valueOf(publicacion.getFechaPublicacion()));
-            stmt.setInt(7, publicacion.getIdComunidad() );
+
+            // ✅ SOLUCION: Verificar si idComunidad es null
+            if (publicacion.getIdComunidad() != null) {
+                stmt.setInt(7, publicacion.getIdComunidad());
+            } else {
+                stmt.setNull(7, Types.INTEGER); // Para publicaciones del feed principal
+            }
 
             int filasAfectadas = stmt.executeUpdate();
 
             if (filasAfectadas > 0) {
-                // Obtener el ID generado
                 ResultSet rs = stmt.getGeneratedKeys();
                 if (rs.next()) {
                     publicacion.setIdPublicacion(rs.getInt(1));
