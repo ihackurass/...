@@ -2009,64 +2009,177 @@
                 </div>
             </div>
 
-
+           <!-- Modal simple para resultados de pago -->
+           <div class="modal fade" id="paymentResultModal" tabindex="-1" role="dialog">
+               <div class="modal-dialog modal-dialog-centered" role="document">
+                   <div class="modal-content payment-result-modal">
+                       <div class="modal-header text-center border-0">
+                           <div class="w-100">
+                               <div class="payment-icon-circle">
+                                   <i class="fas fa-heart payment-icon"></i>
+                               </div>
+                               <h5 class="modal-title mt-3">Resultado de Donación</h5>
+                           </div>
+                           <button type="button" class="close" data-dismiss="modal">
+                               <span>&times;</span>
+                           </button>
+                       </div>
+                       <div class="modal-body text-center pb-4">
+                           <div class="payment-message">
+                               <p class="lead">Tu donación se ha procesado correctamente.</p>
+                           </div>
+                           <div class="aqua-social-badge">
+                               <small class="text-muted">💧 AQUASOCIAL - Red Social del Agua</small>
+                           </div>
+                       </div>
+                       <div class="modal-footer border-0 justify-content-center">
+                           <button type="button" class="btn btn-primary btn-continue" data-dismiss="modal">
+                               Continuar
+                           </button>
+                       </div>
+                   </div>
+               </div>
+           </div>
     <!-- Modal de Donación EXACTO DE HOME.JSP -->
-    <div class="modal fade" id="donationModal" tabindex="-1" role="dialog" aria-labelledby="donationModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="donationModalLabel">
-                        <i class="fas fa-gift text-primary"></i> Enviar un regalo
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="formDonacion">
-                        <!-- IDs ocultos para el JavaScript -->
-                        <input type="hidden" id="donationPostId" name="idPublicacion" value="">
-                        <input type="hidden" id="donationUserId" name="idUsuario" value="">
+        <div class="modal fade" id="donationModal" tabindex="-1" role="dialog" aria-labelledby="donationModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="donationModalLabel">
+                            <i class="fas fa-gift text-primary"></i> Enviar un regalo
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formDonacion">
+                            <!-- IDs ocultos para el JavaScript -->
+                            <input type="hidden" id="donationPostId" name="idPublicacion" value="">
+                            <input type="hidden" id="donationUserId" name="idUsuario" value="">
 
-                        <!-- Información del usuario destinatario -->
-                        <div class="d-flex mb-3" id="donationUserInfo">
-                            <img src="assets/images/avatars/default.png" alt="User Avatar" class="rounded-circle" width="50" height="50" id="donationUserAvatar">
-                            <div class="ms-3">
-                                <p class="font-weight-bold mb-0 creator-name">Usuario</p>
-                                <p class="mb-0" id="donationUserHandle">@usuario</p>
-                                <p class="mb-0 text-muted">Enviar un regalo a este usuario</p>
-                            </div>
-                        </div>
-
-                        <!-- Monto de donación -->
-                        <div class="form-group mb-3">
-                            <label for="donationAmount" class="form-label">
-                                <i class="fas fa-dollar-sign text-success"></i> Monto de la donación (S/)
-                            </label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">S/</span>
+                            <!-- Información del usuario destinatario -->
+                            <div class="d-flex mb-3" id="donationUserInfo">
+                                <img src="assets/images/avatars/default.png" alt="User Avatar" class="rounded-circle" width="50" height="50" id="donationUserAvatar">
+                                <div class="ms-3">
+                                    <p class="font-weight-bold mb-0 creator-name">Usuario</p>
+                                    <p class="mb-0" id="donationUserHandle">@usuario</p>
+                                    <p class="mb-0 text-muted">Enviar un regalo a este usuario</p>
                                 </div>
-                                <input type="number" class="form-control" id="donationAmount" name="cantidad" 
-                                       value="0" min="1" max="10000" step="0.01" required>
                             </div>
-                            <div id="amountError" class="text-danger small mt-1" style="display: none;"></div>
-                            <small class="form-text text-muted">Mínimo S/ 1.00 - Máximo S/ 10,000</small>
-                        </div>
-                    </form>
-                </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                    <button type="button" class="btn btn-success" id="processDonationBtn" disabled>
-                        <i class="fas fa-heart"></i> Donar con Mercado Pago
-                    </button>
+                            <!-- Monto de donación -->
+                            <div class="form-group mb-3">
+                                <label for="donationAmount" class="form-label">
+                                    <i class="fas fa-dollar-sign text-success"></i> Monto de la donación (S/)
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">S/</span>
+                                    </div>
+                                    <input type="number" class="form-control" id="donationAmount" name="cantidad" 
+                                           value="0" min="1" max="10000" step="0.01" required>
+                                </div>
+                                <div id="amountError" class="text-danger small mt-1" style="display: none;"></div>
+                                <small class="form-text text-muted">Mínimo S/ 1.00 - Máximo S/ 10,000</small>
+                            </div>
+
+                            <!-- Datos del donante -->
+                            <div class="form-group mb-3">
+                                <label for="donorName">
+                                    <i class="fas fa-user"></i> Nombre completo *
+                                </label>
+                                <input type="text" class="form-control" id="donorName" name="donorName" 
+                                       placeholder="Tu nombre completo" required>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="donorEmail">
+                                    <i class="fas fa-envelope"></i> Email *
+                                </label>
+                                <input type="email" class="form-control" id="donorEmail" name="donorEmail" 
+                                       placeholder="tu@email.com" required>
+                                <small class="form-text text-muted">Para enviarte el comprobante</small>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label for="donorMessage">
+                                    <i class="fas fa-comment"></i> Mensaje (opcional)
+                                </label>
+                                <textarea class="form-control" id="donorMessage" name="mensaje" 
+                                          placeholder="Mensaje opcional para el destinatario" rows="2"></textarea>
+                            </div>
+
+                            <!-- Total a pagar -->
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="font-weight-bold">Total a pagar:</span>
+                                        <span class="h5 mb-0 text-success" id="donationTotal">S/ 2.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información de Mercado Pago -->
+                            <div class="alert alert-info">
+                                <div class="d-flex align-items-center">
+                                    <img src="assets/images/mp.png" 
+                                         alt="Mercado Pago" width="120" class="me-3">
+                                    <div>
+                                        <strong>Pago seguro con Mercado Pago</strong><br>
+                                        <small>Acepta tarjetas, Yape, PagoEfectivo y más métodos</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Métodos de pago disponibles (solo informativo) -->
+                            <div class="row text-center mb-3">
+                                <div class="col-3">
+                                    <div class="p-2 border rounded">
+                                        <i class="fas fa-credit-card text-primary mb-1"></i>
+                                        <small class="d-block">Tarjetas</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2 border rounded">
+                                        <i class="fas fa-mobile-alt text-warning mb-1"></i>
+                                        <small class="d-block">Yape</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2 border rounded">
+                                        <i class="fas fa-university text-info mb-1"></i>
+                                        <small class="d-block">Bancos</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2 border rounded">
+                                        <i class="fas fa-wallet text-success mb-1"></i>
+                                        <small class="d-block">Efectivo</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <small>
+                                    <i class="fas fa-shield-alt"></i>
+                                    <strong>100% Seguro:</strong> Mercado Pago protege tus datos y garantiza tu compra.
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn btn-success" id="processDonationBtn" disabled>
+                            <i class="fas fa-heart"></i> Donar con Mercado Pago
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <jsp:include page="/components/js_imports.jsp" />
     
@@ -3282,5 +3395,6 @@
                     }
                 });
             }
-
+        window.currentPage = 'community';
+        window.communityId = '<%= comunidad != null ? comunidad.getIdComunidad() : "" %>';
         </script>

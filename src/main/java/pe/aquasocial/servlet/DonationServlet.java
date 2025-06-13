@@ -45,7 +45,7 @@ public class DonationServlet extends HttpServlet {
     private static final String MP_ACCESS_TOKEN = "APP_USR-8274247272126959-060722-1bb5a322e995a46b3bf61f08b85ca0b0-2485332684";
     private static final String MP_PUBLIC_KEY = "APP_USR-3cd5a230-fe50-4f29-8792-26f214f8f531";
 
-    private static final String BASE_URL = "https://3871-181-233-26-51.ngrok-free.app/AQUA_SOCIAL";
+    private static final String BASE_URL = "https://d666-181-233-26-51.ngrok-free.app/AQUA_SOCIAL";
 
     private static final long serialVersionUID = 1L;
 
@@ -123,13 +123,20 @@ public class DonationServlet extends HttpServlet {
             String donorEmail = request.getParameter("donor_email");
             String donorMessage = request.getParameter("donor_message");
 
+            String source = request.getParameter("source");
+            String communityId = request.getParameter("community_id");
+
+            System.out.println("📍 Origen de donación: " + (source != null ? source : "home"));
+            if (communityId != null) {
+                System.out.println("🏘️ ID Comunidad: " + communityId);
+            }
+
             System.out.println("📋 Datos recibidos:");
             System.out.println("   - Monto: " + amountStr);
             System.out.println("   - Creator ID: " + creatorId);
             System.out.println("   - Publication ID: " + publicationId);
             System.out.println("   - Donor: " + donorName + " (" + donorEmail + ")");
-            
-            
+
             // Validaciones básicas
             if (amountStr == null || creatorId == null || donorEmail == null || donorName == null) {
                 sendError(response, "Parámetros requeridos faltantes (amount, creator_id, donor_email, donor_name)", 400);
@@ -191,12 +198,26 @@ public class DonationServlet extends HttpServlet {
             List<PreferenceItemRequest> items = new ArrayList<>();
             items.add(item);
 
-            // URLs de retorno
+            String baseSuccessUrl = BASE_URL + "/DonationServlet?action=payment_success&source=" + (source != null ? source : "home");
+            String basePendingUrl = BASE_URL + "/DonationServlet?action=payment_pending&source=" + (source != null ? source : "home");
+            String baseFailureUrl = BASE_URL + "/DonationServlet?action=payment_failure&source=" + (source != null ? source : "home");
+
+            // Agregar community_id si existe
+            if (communityId != null && !communityId.trim().isEmpty()) {
+                baseSuccessUrl += "&community_id=" + communityId;
+                basePendingUrl += "&community_id=" + communityId;
+                baseFailureUrl += "&community_id=" + communityId;
+            }
+
             PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                    .success(BASE_URL + "/DonationServlet?action=payment_success")
-                    .pending(BASE_URL + "/DonationServlet?action=payment_pending")
-                    .failure(BASE_URL + "/DonationServlet?action=payment_failure")
+                    .success(baseSuccessUrl)
+                    .pending(basePendingUrl)
+                    .failure(baseFailureUrl)
                     .build();
+
+            System.out.println("🔗 URL Success: " + baseSuccessUrl);
+            System.out.println("🔗 URL Pending: " + basePendingUrl);
+            System.out.println("🔗 URL Failure: " + baseFailureUrl);
 
             // Configurar métodos de pago
             PreferencePaymentMethodsRequest paymentMethods = PreferencePaymentMethodsRequest.builder()
@@ -624,21 +645,25 @@ public class DonationServlet extends HttpServlet {
         // Opcional: Guardar rechazo para estadísticas
         System.out.println("❌ Guardando pago rechazado para estadísticas: " + payment.getId());
     }
-
-    /**
-     * Simplificar el manejo de retorno para que dependa del webhook
-     */
+    
     private void handlePaymentReturn(HttpServletRequest request, HttpServletResponse response, String status)
             throws IOException, ServletException {
 
         String paymentId = request.getParameter("payment_id");
         String preferenceId = request.getParameter("preference_id");
+        String externalReference = request.getParameter("external_reference");
+
+        String source = request.getParameter("source");
+        String communityId = request.getParameter("community_id");
 
         System.out.println("🔄 Retorno de Mercado Pago:");
         System.out.println("   - Estado: " + status);
         System.out.println("   - Payment ID: " + paymentId);
         System.out.println("   - Preference ID: " + preferenceId);
-
+        System.out.println("📍 Origen del retorno: " + (source != null ? source : "home"));
+        if (communityId != null) {
+            System.out.println("🏘️ ID Comunidad para redirección: " + communityId);
+        }
         // Obtener sesión
         HttpSession session = request.getSession();
 
@@ -647,7 +672,7 @@ public class DonationServlet extends HttpServlet {
 
         switch (status) {
             case "success":
-                message = "Tu donacion se esta procesando! Te notificaremos por email cuando se confirme. Gracias por tu generosidad";
+                message = "¡Donación realizada exitosamente! Gracias por tu generosidad.";
                 messageType = "success";
                 break;
             case "pending":
@@ -679,7 +704,16 @@ public class DonationServlet extends HttpServlet {
         System.out.println("   - Tipo: " + messageType);
         System.out.println("   - Mensaje: " + message);
 
-        response.sendRedirect(BASE_URL + "/HomeServlet");
+        String redirectUrl;
+        if ("community".equals(source) && communityId != null && !communityId.trim().isEmpty()) {
+            redirectUrl = BASE_URL + "/ComunidadServlet?action=view&id=" + communityId;
+            System.out.println("🏘️ Redirigiendo a vista de comunidad: " + redirectUrl);
+        } else {
+            redirectUrl = BASE_URL + "/HomeServlet";
+            System.out.println("🏠 Redirigiendo a home: " + redirectUrl);
+        }
+
+        response.sendRedirect(redirectUrl);
     }
 
     private boolean isPaymentFromOurApp(Payment payment) {

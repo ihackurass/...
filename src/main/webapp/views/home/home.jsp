@@ -1512,7 +1512,7 @@
 
     .community-name {
         margin: 0;
-        font-size: 20px;
+        font-size: 15px;
         font-weight: 500;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         letter-spacing: -0.02em;
@@ -1994,7 +1994,7 @@
                                                             <i class="fas fa-users"></i>
                                                         </div>
                                                         <div class="community-info">
-                                                            <h6 class="community-name"><%= pub.getNombreComunidad() %></h6>
+                                                            <h6 class="community-name"><%= pub.getNombreComunidad().toUpperCase() %></h6>
                                                             <span class="community-label">Publicación de comunidad</span>
                                                         </div>
                                                     </div>
@@ -3421,7 +3421,7 @@
                     }
                 });
             }
-
+            window.currentPage = 'home';
         </script>
     </body>
 </html>

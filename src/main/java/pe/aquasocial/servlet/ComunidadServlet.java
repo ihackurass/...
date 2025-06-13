@@ -216,9 +216,46 @@ public class ComunidadServlet extends HttpServlet {
         }
     }
 
-    /**
-     * Ver detalles de una comunidad específica
-     */
+    private void checkPaymentMessagesInSession(HttpServletRequest request) {
+        HttpSession session = request.getSession();
+
+        String messageType = (String) session.getAttribute("paymentMessageType");
+        String message = (String) session.getAttribute("paymentMessage");
+        String paymentId = (String) session.getAttribute("paymentId");
+
+        if (messageType != null && message != null) {
+            System.out.println("📱 Mensaje de pago encontrado en sesión:");
+            System.out.println("   - Tipo: " + messageType);
+            System.out.println("   - Mensaje: " + message);
+            System.out.println("   - Payment ID: " + paymentId);
+
+            // Transferir a request attributes para el JSP
+            switch (messageType) {
+                case "success":
+                    request.setAttribute("successMessagePayment", message);
+                    break;
+                case "error":
+                    request.setAttribute("errorMessagePayment", message);
+                    break;
+                case "warning":
+                    request.setAttribute("warningMessagePayment", message);
+                    break;
+            }
+
+            // Datos adicionales
+            if (paymentId != null) {
+                request.setAttribute("paymentId", paymentId);
+            }
+
+            // LIMPIAR SESIÓN (importante para evitar mostrar el mensaje múltiples veces)
+            session.removeAttribute("paymentMessageType");
+            session.removeAttribute("paymentMessage");
+            session.removeAttribute("paymentId");
+            session.removeAttribute("preferenceId");
+
+            System.out.println("✅ Mensaje transferido a request y limpiado de sesión");
+        }
+    }
     private void verComunidad(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
@@ -227,7 +264,7 @@ public class ComunidadServlet extends HttpServlet {
             response.sendRedirect("ComunidadServlet");
             return;
         }
-
+        checkPaymentMessagesInSession(request);
         try {
             int idComunidad = Integer.parseInt(idComunidadStr);
             Usuario usuarioActual = SessionUtil.getLoggedUser(request);
