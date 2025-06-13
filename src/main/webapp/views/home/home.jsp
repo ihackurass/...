@@ -54,7 +54,8 @@
                 border-radius: 10px;
                 padding: 20px;
                 box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-                border: 1px solid #ddd
+                border: 1px solid #ddd;
+                position: relative; /* Añadido para posicionar el badge */
             }
 
             .post-header {
@@ -1482,6 +1483,49 @@
         cursor: not-allowed;
         transform: none !important;
     }
+    .community-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 12px 20px;
+        margin: -20px -20px 20px -20px;
+        border-radius: 10px 10px 0 0;
+        border-bottom: 3px solid rgba(255,255,255,0.2);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .community-header-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .community-icon {
+        background: rgba(255,255,255,0.2);
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .community-name {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 500;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        letter-spacing: -0.02em;
+    }
+
+    .community-label {
+        font-size: 11px;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 400;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
 
     /* ============== RESPONSIVE ============== */
     @media (max-width: 768px) {
@@ -1942,6 +1986,20 @@
                                         List<Comentario> comentarios = (List<Comentario>) request.getAttribute("comentarios_" + pub.getIdPublicacion());
                                 %>
                                         <div class="post-container" data-post-id="<%= pub.getIdPublicacion() %>">
+
+                                            <% if (pub.getNombreComunidad() != null && !pub.getNombreComunidad().trim().isEmpty()) { %>
+                                                <div class="community-header">
+                                                    <div class="community-header-content">
+                                                        <div class="community-icon">
+                                                            <i class="fas fa-users"></i>
+                                                        </div>
+                                                        <div class="community-info">
+                                                            <h6 class="community-name"><%= pub.getNombreComunidad() %></h6>
+                                                            <span class="community-label">Publicación de comunidad</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <% } %>
                                             <div class="post-header">
                                                 <img src="<%= pub.getAvatarUsuario() != null ? pub.getAvatarUsuario() : "assets/images/avatars/default.png" %>" alt="User Avatar">
                                                 <div class="user-info">
