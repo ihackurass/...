@@ -24,6 +24,7 @@ import pe.aquasocial.entity.Comunidad;
 import pe.aquasocial.entity.ComunidadMiembro;
 import pe.aquasocial.entity.Publicacion;
 import pe.aquasocial.entity.Comentario;
+import pe.aquasocial.entity.SolicitudMembresia;
 import pe.aquasocial.util.Conexion;
 import pe.aquasocial.util.SessionUtil;
 
@@ -106,6 +107,12 @@ public class ComunidadServlet extends HttpServlet {
                 case "managedCommunities":
                     verComunidadesQueAdministro(request, response);
                     break;
+                case "requests":
+                    verSolicitudesPendientes(request, response);
+                    break;
+                case "manageRequests":
+                    gestionarSolicitudes(request, response);
+                    break;
                 default:
                     listarComunidades(request, response);
                     break;
@@ -160,6 +167,15 @@ public class ComunidadServlet extends HttpServlet {
                     break;
                 case "checkUsername":
                     verificarUsernameDisponible(request, response);
+                    break;
+                case "requestMembership":
+                    solicitarMembresia(request, response);
+                    break;
+                case "respondRequest":
+                    responderSolicitud(request, response);
+                    break;
+                case "cancelRequest":
+                    cancelarSolicitud(request, response);
                     break;
                 default:
                     response.sendRedirect("ComunidadServlet");
@@ -273,7 +289,6 @@ public class ComunidadServlet extends HttpServlet {
 
             System.out.println("👀 Viendo comunidad ID: " + idComunidad + " por usuario: " + idUsuarioActual);
 
-            // Obtener datos de la comunidad
             Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
             if (comunidad == null) {
                 request.setAttribute("error", "Comunidad no encontrada");
@@ -281,7 +296,10 @@ public class ComunidadServlet extends HttpServlet {
                 return;
             }
 
-            // Verificar permisos del usuario actual
+            boolean tieneSolicitudPendiente = false;
+            String estadoSolicitud = null;
+            int solicitudesPendientesCount = 0;
+
             if (usuarioActual != null) {
                 boolean esSeguidor = comunidadDAO.esMiembroDeComunidad(idUsuarioActual, idComunidad);
                 boolean esAdmin = comunidadDAO.esAdminDeComunidad(idUsuarioActual, idComunidad);
@@ -290,49 +308,84 @@ public class ComunidadServlet extends HttpServlet {
                 comunidad.setUsuarioEsSeguidor(esSeguidor);
                 comunidad.setUsuarioEsAdmin(esAdmin);
                 comunidad.setUsuarioEsCreador(esCreador);
+
+                if (!esSeguidor && !comunidad.isEsPublica()) {
+                    tieneSolicitudPendiente = comunidadDAO.tieneSolicitudPendiente(idUsuarioActual, idComunidad);
+                    if (!tieneSolicitudPendiente) {
+                        estadoSolicitud = comunidadDAO.getEstadoSolicitud(idUsuarioActual, idComunidad);
+                    }
+                }
+
+                if (esAdmin || esCreador) {
+                    solicitudesPendientesCount = comunidadDAO.contarSolicitudesPendientes(idComunidad);
+                }
             }
 
-            // Obtener publicaciones de la comunidad
-            List<Publicacion> publicaciones = publicacionDAO.obtenerPorComunidad(idComunidad, idUsuarioActual);
+            // ⭐ VERIFICAR SI PUEDE VER PUBLICACIONES
+            List<Publicacion> publicaciones = new ArrayList<>();
+            boolean puedeVerPublicaciones = false;
 
-            // Obtener comentarios para cada publicación
-            for (Publicacion pub : publicaciones) {
-                List<Comentario> comentarios = comentarioDAO.obtenerPorPublicacion(pub.getIdPublicacion());
-                request.setAttribute("comentarios_" + pub.getIdPublicacion(), comentarios != null ? comentarios : new ArrayList<>());
+            if (usuarioActual != null) {
+                // ⭐ SOLO PUEDE VER PUBLICACIONES SI:
+                // 1. Es miembro de la comunidad (seguidor, admin o creador)
+                // 2. O la comunidad es pública
+                if (comunidad.isUsuarioEsSeguidor() || comunidad.isUsuarioEsAdmin() || comunidad.isUsuarioEsCreador()) {
+                    puedeVerPublicaciones = true;
+                } else if (comunidad.isEsPublica()) {
+                    puedeVerPublicaciones = true;
+                }
+            } else {
+                // ⭐ USUARIOS NO LOGUEADOS SOLO VEN COMUNIDADES PÚBLICAS
+                if (comunidad.isEsPublica()) {
+                    puedeVerPublicaciones = true;
+                }
+            }
+
+            // ⭐ CARGAR PUBLICACIONES SOLO SI TIENE PERMISOS
+            if (puedeVerPublicaciones) {
+                publicaciones = publicacionDAO.obtenerPorComunidad(idComunidad, idUsuarioActual);
+
+                // Obtener comentarios para cada publicación
+                for (Publicacion pub : publicaciones) {
+                    List<Comentario> comentarios = comentarioDAO.obtenerPorPublicacion(pub.getIdPublicacion());
+                    request.setAttribute("comentarios_" + pub.getIdPublicacion(), comentarios != null ? comentarios : new ArrayList<>());
+                }
             }
 
             List<ComunidadMiembro> miembros = new ArrayList<>();
-
             boolean puedeVerMiembros = false;
 
             if (usuarioActual != null) {
                 if (comunidad.isUsuarioEsSeguidor() || comunidad.isUsuarioEsAdmin() || comunidad.isUsuarioEsCreador()) {
                     puedeVerMiembros = true;
-                } 
-                else if (comunidad.isEsPublica()) {
+                } else if (comunidad.isEsPublica()) {
                     puedeVerMiembros = true;
                 }
             }
 
-// Obtener miembros solo si tiene permisos
             if (puedeVerMiembros) {
                 miembros = comunidadDAO.obtenerMiembrosPorComunidad(idComunidad);
             }
-            // Verificar si puede publicar en esta comunidad
+
             boolean puedePublicar = false;
             if (usuarioActual != null) {
                 puedePublicar = publicacionDAO.puedePublicarEnComunidad(idUsuarioActual, idComunidad);
             }
 
-            // Enviar datos al JSP
+            // ⭐ ENVIAR ATRIBUTOS AL JSP
             request.setAttribute("comunidad", comunidad);
             request.setAttribute("publicaciones", publicaciones);
             request.setAttribute("miembros", miembros);
             request.setAttribute("totalPublicaciones", publicaciones.size());
             request.setAttribute("totalMiembros", miembros.size());
             request.setAttribute("puedePublicar", puedePublicar);
+            request.setAttribute("puedeVerPublicaciones", puedeVerPublicaciones); // ⭐ NUEVO
 
-            System.out.println("✅ Datos de comunidad enviados al JSP");
+            request.setAttribute("tieneSolicitudPendiente", tieneSolicitudPendiente);
+            request.setAttribute("estadoSolicitud", estadoSolicitud);
+            request.setAttribute("solicitudesPendientesCount", solicitudesPendientesCount);
+
+            System.out.println("✅ Datos de comunidad enviados al JSP - Puede ver publicaciones: " + puedeVerPublicaciones);
 
             request.getRequestDispatcher("/views/comunidades/view.jsp").forward(request, response);
 
@@ -710,60 +763,6 @@ public class ComunidadServlet extends HttpServlet {
 
         } catch (Exception e) {
             System.err.println("❌ Error al crear comunidad: " + e.getMessage());
-            e.printStackTrace();
-            enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
-        }
-    }
-
-    /**
-     * Unirse a una comunidad
-     */
-    private void unirseAComunidad(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        try {
-            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
-            if (usuarioActual == null) {
-                enviarRespuestaError(response, "Usuario no autenticado", 401);
-                return;
-            }
-
-            int idComunidad = Integer.parseInt(request.getParameter("idComunidad"));
-
-            // Verificar que la comunidad existe
-            Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
-            if (comunidad == null) {
-                enviarRespuestaError(response, "Comunidad no encontrada", 404);
-                return;
-            }
-
-            // Verificar que no es ya miembro
-            if (comunidadDAO.esMiembroDeComunidad(usuarioActual.getId(), idComunidad)) {
-                enviarRespuestaError(response, "Ya eres miembro de esta comunidad", 400);
-                return;
-            }
-
-            // Unirse como seguidor
-            if (comunidadDAO.seguirComunidad(usuarioActual.getId(), idComunidad)) {
-                System.out.println("✅ " + usuarioActual.getUsername() + " se unió a comunidad: " + comunidad.getNombre());
-
-                JSONObject respuesta = new JSONObject();
-                respuesta.put("success", true);
-                respuesta.put("message", "¡Te has unido a '" + comunidad.getNombre() + "'!");
-                respuesta.put("newMemberCount", comunidad.getSeguidoresCount() + 1);
-
-                response.getWriter().write(respuesta.toString());
-            } else {
-                enviarRespuestaError(response, "Error al unirse a la comunidad", 500);
-            }
-
-        } catch (NumberFormatException e) {
-            enviarRespuestaError(response, "ID de comunidad inválido", 400);
-        } catch (Exception e) {
-            System.err.println("❌ Error al unirse a comunidad: " + e.getMessage());
             e.printStackTrace();
             enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
         }
@@ -1508,6 +1507,353 @@ public class ComunidadServlet extends HttpServlet {
             e.printStackTrace();
             request.setAttribute("error", "Error al cargar los miembros");
             response.sendRedirect("ComunidadServlet");
+        }
+    }
+
+    private void verSolicitudesPendientes(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String idComunidadStr = request.getParameter("id");
+        if (idComunidadStr == null || idComunidadStr.trim().isEmpty()) {
+            response.sendRedirect("ComunidadServlet");
+            return;
+        }
+
+        try {
+            int idComunidad = Integer.parseInt(idComunidadStr);
+            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
+
+            if (usuarioActual == null) {
+                response.sendRedirect("LoginServlet");
+                return;
+            }
+
+            // Verificar que es admin o creador
+            boolean esAdmin = comunidadDAO.esAdminDeComunidad(usuarioActual.getId(), idComunidad);
+            boolean esCreador = comunidadDAO.esCreadorDeComunidad(usuarioActual.getId(), idComunidad);
+
+            if (!esAdmin && !esCreador) {
+                request.setAttribute("error", "No tienes permisos para ver las solicitudes");
+                response.sendRedirect("ComunidadServlet?action=view&id=" + idComunidad);
+                return;
+            }
+
+            Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
+            if (comunidad == null) {
+                response.sendRedirect("ComunidadServlet");
+                return;
+            }
+
+            List<SolicitudMembresia> solicitudesPendientes = comunidadDAO.obtenerSolicitudesPendientes(idComunidad);
+
+            request.setAttribute("comunidad", comunidad);
+            request.setAttribute("solicitudes", solicitudesPendientes);
+            request.setAttribute("esCreador", esCreador);
+            request.setAttribute("esAdmin", esAdmin);
+
+            request.getRequestDispatcher("/views/comunidades/requests.jsp").forward(request, response);
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect("ComunidadServlet");
+        } catch (Exception e) {
+            System.err.println("❌ Error al ver solicitudes: " + e.getMessage());
+            e.printStackTrace();
+            request.setAttribute("error", "Error al cargar solicitudes");
+            response.sendRedirect("ComunidadServlet");
+        }
+    }
+
+    /**
+     * Gestionar todas las solicitudes (historial completo)
+     */
+    private void gestionarSolicitudes(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String idComunidadStr = request.getParameter("id");
+        if (idComunidadStr == null || idComunidadStr.trim().isEmpty()) {
+            response.sendRedirect("ComunidadServlet");
+            return;
+        }
+
+        try {
+            int idComunidad = Integer.parseInt(idComunidadStr);
+            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
+
+            if (usuarioActual == null) {
+                response.sendRedirect("LoginServlet");
+                return;
+            }
+
+            // Verificar permisos
+            boolean esCreador = comunidadDAO.esCreadorDeComunidad(usuarioActual.getId(), idComunidad);
+            if (!esCreador) {
+                request.setAttribute("error", "Solo el creador puede gestionar el historial de solicitudes");
+                response.sendRedirect("ComunidadServlet?action=view&id=" + idComunidad);
+                return;
+            }
+
+            Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
+            List<SolicitudMembresia> todasLasSolicitudes = comunidadDAO.obtenerTodasLasSolicitudes(idComunidad);
+
+            request.setAttribute("comunidad", comunidad);
+            request.setAttribute("solicitudes", todasLasSolicitudes);
+            request.setAttribute("esHistorial", true);
+
+            request.getRequestDispatcher("/views/comunidades/manage_requests.jsp").forward(request, response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al gestionar solicitudes: " + e.getMessage());
+            e.printStackTrace();
+            response.sendRedirect("ComunidadServlet");
+        }
+    }
+
+// ============= NUEVOS MÉTODOS POST =============
+    /**
+     * Solicitar membresía a una comunidad privada
+     */
+    private void solicitarMembresia(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
+            if (usuarioActual == null) {
+                enviarRespuestaError(response, "Usuario no autenticado", 401);
+                return;
+            }
+
+            int idComunidad = Integer.parseInt(request.getParameter("idComunidad"));
+            String mensaje = request.getParameter("mensaje");
+
+            // Verificar que la comunidad existe y es privada
+            Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
+            if (comunidad == null) {
+                enviarRespuestaError(response, "Comunidad no encontrada", 404);
+                return;
+            }
+
+            if (comunidad.isEsPublica()) {
+                enviarRespuestaError(response, "Esta comunidad es pública, puedes unirte directamente", 400);
+                return;
+            }
+
+            // Verificar que no es ya miembro
+            if (comunidadDAO.esMiembroDeComunidad(usuarioActual.getId(), idComunidad)) {
+                enviarRespuestaError(response, "Ya eres miembro de esta comunidad", 400);
+                return;
+            }
+
+            // Verificar que no tiene una solicitud pendiente
+            if (comunidadDAO.tieneSolicitudPendiente(usuarioActual.getId(), idComunidad)) {
+                enviarRespuestaError(response, "Ya tienes una solicitud pendiente para esta comunidad", 400);
+                return;
+            }
+
+            // Crear la solicitud
+            if (comunidadDAO.crearSolicitudMembresia(usuarioActual.getId(), idComunidad, mensaje)) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("success", true);
+                respuesta.put("message", "Solicitud enviada correctamente. Los administradores la revisarán pronto.");
+
+                // Opcional: Notificar a administradores
+                //notificarAdministradores(comunidad, usuarioActual);
+                response.getWriter().write(respuesta.toString());
+            } else {
+                enviarRespuestaError(response, "Error al enviar la solicitud", 500);
+            }
+
+        } catch (NumberFormatException e) {
+            enviarRespuestaError(response, "ID de comunidad inválido", 400);
+        } catch (Exception e) {
+            System.err.println("❌ Error al solicitar membresía: " + e.getMessage());
+            e.printStackTrace();
+            enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
+        }
+    }
+
+    /**
+     * Responder a una solicitud de membresía (aprobar/rechazar)
+     */
+    private void responderSolicitud(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
+            if (usuarioActual == null) {
+                enviarRespuestaError(response, "Usuario no autenticado", 401);
+                return;
+            }
+
+            int idSolicitud = Integer.parseInt(request.getParameter("idSolicitud"));
+            String accion = request.getParameter("accion"); // "aprobar" o "rechazar"
+            String mensajeRespuesta = request.getParameter("mensajeRespuesta");
+
+            // Validar acción
+            if (!"aprobar".equals(accion) && !"rechazar".equals(accion)) {
+                enviarRespuestaError(response, "Acción inválida", 400);
+                return;
+            }
+
+            // Obtener la solicitud para verificar permisos
+            SolicitudMembresia solicitud = comunidadDAO.obtenerSolicitudPorId(idSolicitud);
+            if (solicitud == null) {
+                enviarRespuestaError(response, "Solicitud no encontrada", 404);
+                return;
+            }
+
+            // Verificar que el usuario tiene permisos
+            boolean esAdmin = comunidadDAO.esAdminDeComunidad(usuarioActual.getId(), solicitud.getIdComunidad());
+            boolean esCreador = comunidadDAO.esCreadorDeComunidad(usuarioActual.getId(), solicitud.getIdComunidad());
+
+            if (!esAdmin && !esCreador) {
+                enviarRespuestaError(response, "No tienes permisos para responder solicitudes", 403);
+                return;
+            }
+
+            // Verificar que la solicitud está pendiente
+            if (!"pendiente".equals(solicitud.getEstado())) {
+                enviarRespuestaError(response, "Esta solicitud ya fue respondida", 400);
+                return;
+            }
+
+            // Convertir acción a estado
+            String estado = "aprobar".equals(accion) ? "aprobada" : "rechazada";
+
+            // Responder la solicitud
+            if (comunidadDAO.responderSolicitud(idSolicitud, usuarioActual.getId(), estado, mensajeRespuesta)) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("success", true);
+                respuesta.put("message", "aprobar".equals(accion)
+                        ? "Usuario aprobado correctamente" : "Solicitud rechazada");
+                respuesta.put("estado", estado);
+
+                // Opcional: Notificar al usuario solicitante
+                //notificarUsuarioRespuesta(solicitud, estado, mensajeRespuesta);
+                response.getWriter().write(respuesta.toString());
+            } else {
+                enviarRespuestaError(response, "Error al procesar la respuesta", 500);
+            }
+
+        } catch (NumberFormatException e) {
+            enviarRespuestaError(response, "Parámetros inválidos", 400);
+        } catch (Exception e) {
+            System.err.println("❌ Error al responder solicitud: " + e.getMessage());
+            e.printStackTrace();
+            enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
+        }
+    }
+
+    /**
+     * Cancelar una solicitud pendiente (por parte del usuario)
+     */
+    private void cancelarSolicitud(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
+            if (usuarioActual == null) {
+                enviarRespuestaError(response, "Usuario no autenticado", 401);
+                return;
+            }
+
+            int idComunidad = Integer.parseInt(request.getParameter("idComunidad"));
+
+            // Verificar que tiene una solicitud pendiente
+            if (!comunidadDAO.tieneSolicitudPendiente(usuarioActual.getId(), idComunidad)) {
+                enviarRespuestaError(response, "No tienes ninguna solicitud pendiente para esta comunidad", 400);
+                return;
+            }
+
+            // Cancelar la solicitud
+            if (comunidadDAO.cancelarSolicitud(usuarioActual.getId(), idComunidad)) {
+                JSONObject respuesta = new JSONObject();
+                respuesta.put("success", true);
+                respuesta.put("message", "Solicitud cancelada correctamente");
+
+                response.getWriter().write(respuesta.toString());
+            } else {
+                enviarRespuestaError(response, "Error al cancelar la solicitud", 500);
+            }
+
+        } catch (NumberFormatException e) {
+            enviarRespuestaError(response, "ID de comunidad inválido", 400);
+        } catch (Exception e) {
+            System.err.println("❌ Error al cancelar solicitud: " + e.getMessage());
+            e.printStackTrace();
+            enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
+        }
+    }
+// ============= MÉTODO MODIFICADO PARA UNIRSE =============
+
+    /**
+     * Unirse a una comunidad (modificado para manejar públicas y privadas)
+     */
+    private void unirseAComunidad(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            Usuario usuarioActual = SessionUtil.getLoggedUser(request);
+            if (usuarioActual == null) {
+                enviarRespuestaError(response, "Usuario no autenticado", 401);
+                return;
+            }
+
+            int idComunidad = Integer.parseInt(request.getParameter("idComunidad"));
+
+            // Verificar que la comunidad existe
+            Comunidad comunidad = comunidadDAO.obtenerPorId(idComunidad);
+            if (comunidad == null) {
+                enviarRespuestaError(response, "Comunidad no encontrada", 404);
+                return;
+            }
+
+            // Verificar que no es ya miembro
+            if (comunidadDAO.esMiembroDeComunidad(usuarioActual.getId(), idComunidad)) {
+                enviarRespuestaError(response, "Ya eres miembro de esta comunidad", 400);
+                return;
+            }
+
+            JSONObject respuesta = new JSONObject();
+
+            if (comunidad.isEsPublica()) {
+                // COMUNIDAD PÚBLICA: Unirse directamente
+                if (comunidadDAO.seguirComunidad(usuarioActual.getId(), idComunidad)) {
+                    respuesta.put("success", true);
+                    respuesta.put("message", "¡Te has unido a '" + comunidad.getNombre() + "'!");
+                    respuesta.put("type", "joined");
+                    respuesta.put("newMemberCount", comunidad.getSeguidoresCount() + 1);
+                } else {
+                    enviarRespuestaError(response, "Error al unirse a la comunidad", 500);
+                    return;
+                }
+            } else {
+                // COMUNIDAD PRIVADA: Redirigir al proceso de solicitud
+                respuesta.put("success", false);
+                respuesta.put("message", "Esta es una comunidad privada");
+                respuesta.put("type", "private_community");
+                respuesta.put("requiresRequest", true);
+            }
+
+            response.getWriter().write(respuesta.toString());
+
+        } catch (NumberFormatException e) {
+            enviarRespuestaError(response, "ID de comunidad inválido", 400);
+        } catch (Exception e) {
+            System.err.println("❌ Error al unirse a comunidad: " + e.getMessage());
+            e.printStackTrace();
+            enviarRespuestaError(response, "Error inesperado: " + e.getMessage(), 500);
         }
     }
 

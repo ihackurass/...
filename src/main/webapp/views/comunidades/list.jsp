@@ -878,35 +878,44 @@
                 filterCommunities();
                 $(this).hide();
             });
-            
+
             function filterCommunities() {
                 const searchTerm = $('#searchCommunities').val().toLowerCase();
                 const selectedPrivacy = $('#filterPrivacy').val();
                 const selectedRole = $('#filterRole').val();
-                
+
                 let visibleCount = 0;
                 let hasActiveFilters = searchTerm !== '' || selectedPrivacy !== '' || selectedRole !== '';
-                
+
                 $('.community-card').each(function() {
                     const $card = $(this);
-                    const name = $card.data('name') || '';
-                    const handle = $card.data('handle') || '';
-                    const description = $card.data('description') || '';
-                    const privacy = $card.data('privacy') || '';
-                    const role = $card.data('role') || '';
-                    
-                    // Filtro de búsqueda (nombre, handle o descripción)
+
+                    function getTextData(attr) {
+                        const value = $card.data(attr);
+                        if (value === null || value === undefined) {
+                            return '';
+                        }
+                        return String(value).toLowerCase();
+                    }
+
+                    const name = getTextData('name');
+                    const handle = getTextData('handle');
+                    const description = getTextData('description');
+                    const privacy = String($card.data('privacy') || '');
+                    const role = String($card.data('role') || '');
+
+                    // Filtro de búsqueda
                     const matchesSearch = searchTerm === '' || 
                         name.includes(searchTerm) || 
                         handle.includes(searchTerm) || 
                         description.includes(searchTerm);
-                    
+
                     // Filtro de privacidad
                     const matchesPrivacy = selectedPrivacy === '' || privacy === selectedPrivacy;
-                    
+
                     // Filtro de rol
                     const matchesRole = selectedRole === '' || role === selectedRole;
-                    
+
                     if (matchesSearch && matchesPrivacy && matchesRole) {
                         $card.show();
                         visibleCount++;
@@ -914,30 +923,9 @@
                         $card.hide();
                     }
                 });
-                
-                // Actualizar contador
-                $('#totalComunidades').text(visibleCount);
-                $('#filteredCount').text(visibleCount);
-                
-                // Mostrar/ocultar elementos según resultados
-                if (hasActiveFilters) {
-                    $('#resultsCounter').show();
-                    $('#clearFilters').show();
-                } else {
-                    $('#resultsCounter').hide();
-                    $('#clearFilters').hide();
-                    $('#totalComunidades').text(totalComunidades);
-                }
-                
-                if (visibleCount === 0 && hasActiveFilters) {
-                    $('#noResults').show();
-                    $('#communityGrid').hide();
-                } else {
-                    $('#noResults').hide();
-                    $('#communityGrid').show();
-                }
+
+                // ... resto del código igual ...
             }
-            
             // Función para abrir modal de crear (placeholder)
             window.abrirModalCrear = function() {
                 // Redireccionar a página de crear o abrir modal

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import pe.aquasocial.entity.Comunidad;
 import pe.aquasocial.entity.ComunidadMiembro;
+import pe.aquasocial.entity.SolicitudMembresia;
 import pe.aquasocial.util.Conexion;
 
 public class ComunidadDAO implements IComunidadDAO {
@@ -651,5 +652,397 @@ public class ComunidadDAO implements IComunidadDAO {
         miembro.setUsuarioPrivilegiado(rs.getBoolean("privilegio"));
 
         return miembro;
+    }
+
+    public boolean crearSolicitudMembresia(int idUsuario, int idComunidad, String mensaje) {
+        // ⭐ USAR MySQL ON DUPLICATE KEY UPDATE
+        String sql = "INSERT INTO comunidad_solicitudes (id_usuario, id_comunidad, mensaje_solicitud, estado, fecha_solicitud) "
+                + "VALUES (?, ?, ?, 'pendiente', CURRENT_TIMESTAMP) "
+                + "ON DUPLICATE KEY UPDATE "
+                + "mensaje_solicitud = VALUES(mensaje_solicitud), "
+                + "estado = 'pendiente', "
+                + "fecha_solicitud = CURRENT_TIMESTAMP";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            stmt.setInt(2, idComunidad);
+            stmt.setString(3, mensaje);
+
+            boolean resultado = stmt.executeUpdate() > 0;
+
+            if (resultado) {
+                System.out.println("✅ Solicitud de membresía procesada: Usuario " + idUsuario + " → Comunidad " + idComunidad);
+            }
+
+            return resultado;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al crear solicitud de membresía: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Verificar si un usuario tiene una solicitud pendiente para una comunidad
+     */
+    public boolean tieneSolicitudPendiente(int idUsuario, int idComunidad) {
+        String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ? AND id_comunidad = ? AND estado = 'pendiente'";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            stmt.setInt(2, idComunidad);
+
+            ResultSet rs = stmt.executeQuery();
+            return rs.next() && rs.getInt(1) > 0;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al verificar solicitud pendiente: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Obtener el estado de la solicitud de un usuario para una comunidad
+     */
+    public String getEstadoSolicitud(int idUsuario, int idComunidad) {
+        String sql = "SELECT estado FROM comunidad_solicitudes WHERE id_usuario = ? AND id_comunidad = ? ORDER BY fecha_solicitud DESC LIMIT 1";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            stmt.setInt(2, idComunidad);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("estado");
+            }
+
+            return null; // No tiene solicitud
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener estado de solicitud: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Obtener todas las solicitudes pendientes para una comunidad
+     */
+    public List<SolicitudMembresia> obtenerSolicitudesPendientes(int idComunidad) {
+        List<SolicitudMembresia> solicitudes = new ArrayList<>();
+        String sql = "SELECT s.*, u.username, u.nombre_completo, u.avatar, u.email "
+                + "FROM comunidad_solicitudes s "
+                + "JOIN usuarios u ON s.id_usuario = u.id "
+                + "WHERE s.id_comunidad = ? AND s.estado = 'pendiente' "
+                + "ORDER BY s.fecha_solicitud ASC";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idComunidad);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                SolicitudMembresia solicitud = mapearSolicitudMembresia(rs);
+                solicitudes.add(solicitud);
+            }
+
+            System.out.println("✅ Obtenidas " + solicitudes.size() + " solicitudes pendientes para comunidad " + idComunidad);
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener solicitudes pendientes: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return solicitudes;
+    }
+
+    /**
+     * Obtener todas las solicitudes para una comunidad (todas las estados)
+     */
+    public List<SolicitudMembresia> obtenerTodasLasSolicitudes(int idComunidad) {
+        List<SolicitudMembresia> solicitudes = new ArrayList<>();
+        String sql = "SELECT s.*, "
+                + "u.username as username_usuario, u.nombre_completo as nombre_usuario, u.avatar as avatar_usuario, u.email as email_usuario, "
+                + "a.username as username_admin, a.nombre_completo as nombre_admin "
+                + "FROM comunidad_solicitudes s "
+                + "JOIN usuarios u ON s.id_usuario = u.id "
+                + "LEFT JOIN usuarios a ON s.id_admin_respuesta = a.id "
+                + "WHERE s.id_comunidad = ? "
+                + "ORDER BY s.fecha_solicitud DESC";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idComunidad);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                SolicitudMembresia solicitud = mapearSolicitudMembresiaCompleta(rs);
+                solicitudes.add(solicitud);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener todas las solicitudes: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return solicitudes;
+    }
+
+    /**
+     * Responder a una solicitud de membresía (aprobar o rechazar)
+     */
+    public boolean responderSolicitud(int idSolicitud, int idAdmin, String estado, String mensajeRespuesta) {
+        Connection conn = null;
+        try {
+            conn = Conexion.getConexion();
+            conn.setAutoCommit(false); // Iniciar transacción
+
+            // ⭐ 1. OBTENER DATOS DE LA SOLICITUD PRIMERO (CON LA MISMA CONEXIÓN)
+            int idUsuario = 0;
+            int idComunidad = 0;
+
+            String sqlSelect = "SELECT id_usuario, id_comunidad FROM comunidad_solicitudes WHERE id_solicitud = ?";
+            try (PreparedStatement stmtSelect = conn.prepareStatement(sqlSelect)) {
+                stmtSelect.setInt(1, idSolicitud);
+                ResultSet rs = stmtSelect.executeQuery();
+
+                if (rs.next()) {
+                    idUsuario = rs.getInt("id_usuario");
+                    idComunidad = rs.getInt("id_comunidad");
+                } else {
+                    // Solicitud no encontrada
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            // ⭐ 2. ACTUALIZAR LA SOLICITUD
+            String sqlUpdate = "UPDATE comunidad_solicitudes SET estado = ?, id_admin_respuesta = ?, "
+                    + "mensaje_respuesta = ?, fecha_respuesta = CURRENT_TIMESTAMP WHERE id_solicitud = ?";
+
+            try (PreparedStatement stmt = conn.prepareStatement(sqlUpdate)) {
+                stmt.setString(1, estado);
+                stmt.setInt(2, idAdmin);
+                stmt.setString(3, mensajeRespuesta);
+                stmt.setInt(4, idSolicitud);
+
+                int filas = stmt.executeUpdate();
+                if (filas == 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            // ⭐ 3. SI FUE APROBADA, AGREGAR COMO MIEMBRO (CON LA MISMA CONEXIÓN)
+            if ("aprobada".equals(estado)) {
+                boolean agregado = agregarMiembroAprobado(conn, idUsuario, idComunidad);
+                if (!agregado) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            conn.commit();
+            System.out.println("✅ Solicitud " + idSolicitud + " respondida: " + estado);
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al responder solicitud: " + e.getMessage());
+            e.printStackTrace();
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+            return false;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Obtener una solicitud específica por ID
+     */
+    public SolicitudMembresia obtenerSolicitudPorId(int idSolicitud) {
+        String sql = "SELECT s.*, "
+                + "u.username as username_usuario, u.nombre_completo as nombre_usuario, u.avatar as avatar_usuario, u.email as email_usuario, "
+                + "a.username as username_admin, a.nombre_completo as nombre_admin, "
+                + // ⭐ AGREGADO
+                "c.nombre as nombre_comunidad, c.comunidad_username as username_comunidad "
+                + "FROM comunidad_solicitudes s "
+                + "JOIN usuarios u ON s.id_usuario = u.id "
+                + "LEFT JOIN usuarios a ON s.id_admin_respuesta = a.id "
+                + // ⭐ AGREGADO
+                "JOIN comunidades c ON s.id_comunidad = c.id_comunidad "
+                + "WHERE s.id_solicitud = ?";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idSolicitud);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return mapearSolicitudMembresiaCompleta(rs);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener solicitud por ID: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    /**
+     * Agregar un miembro aprobado a la comunidad
+     */
+    private boolean agregarMiembroAprobado(Connection conn, int idUsuario, int idComunidad) throws SQLException {
+        String sqlCheck = "SELECT COUNT(*) FROM comunidad_miembros WHERE id_usuario = ? AND id_comunidad = ?";
+        try (PreparedStatement stmtCheck = conn.prepareStatement(sqlCheck)) {
+            stmtCheck.setInt(1, idUsuario);
+            stmtCheck.setInt(2, idComunidad);
+
+            ResultSet rs = stmtCheck.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.out.println("⚠️ Usuario " + idUsuario + " ya es miembro de comunidad " + idComunidad);
+                return true;
+            }
+        }
+
+        // ⭐ AGREGAR COMO MIEMBRO
+        String sql = "INSERT INTO comunidad_miembros (id_comunidad, id_usuario, rol, fecha_union) VALUES (?, ?, 'seguidor', CURRENT_TIMESTAMP)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idComunidad);
+            stmt.setInt(2, idUsuario);
+
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Contar solicitudes pendientes para una comunidad
+     */
+    public int contarSolicitudesPendientes(int idComunidad) {
+        String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_comunidad = ? AND estado = 'pendiente'";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idComunidad);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar solicitudes pendientes: " + e.getMessage());
+        }
+
+        return 0;
+    }
+
+    /**
+     * Cancelar una solicitud pendiente (por parte del usuario)
+     */
+    public boolean cancelarSolicitud(int idUsuario, int idComunidad) {
+        String sql = "DELETE FROM comunidad_solicitudes WHERE id_usuario = ? AND id_comunidad = ? AND estado = 'pendiente'";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            stmt.setInt(2, idComunidad);
+
+            boolean cancelada = stmt.executeUpdate() > 0;
+
+            if (cancelada) {
+                System.out.println("✅ Solicitud cancelada: Usuario " + idUsuario + " → Comunidad " + idComunidad);
+            }
+
+            return cancelada;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al cancelar solicitud: " + e.getMessage());
+            return false;
+        }
+    }
+
+// ============= MÉTODOS AUXILIARES PARA MAPEO =============
+    /**
+     * Mapear ResultSet a SolicitudMembresia (básico)
+     */
+    private SolicitudMembresia mapearSolicitudMembresia(ResultSet rs) throws SQLException {
+        SolicitudMembresia solicitud = new SolicitudMembresia();
+
+        solicitud.setIdSolicitud(rs.getInt("id_solicitud"));
+        solicitud.setIdComunidad(rs.getInt("id_comunidad"));
+        solicitud.setIdUsuario(rs.getInt("id_usuario"));
+        solicitud.setEstado(rs.getString("estado"));
+        solicitud.setMensajeSolicitud(rs.getString("mensaje_solicitud"));
+
+        // Fechas
+        Timestamp fechaSolicitud = rs.getTimestamp("fecha_solicitud");
+        if (fechaSolicitud != null) {
+            solicitud.setFechaSolicitud(fechaSolicitud.toLocalDateTime());
+        }
+
+        Timestamp fechaRespuesta = rs.getTimestamp("fecha_respuesta");
+        if (fechaRespuesta != null) {
+            solicitud.setFechaRespuesta(fechaRespuesta.toLocalDateTime());
+        }
+
+        // ⭐ DATOS DEL USUARIO CON NOMBRES CORRECTOS
+        try {
+            // Intentar con alias primero
+            solicitud.setUsernameUsuario(rs.getString("username_usuario"));
+            solicitud.setNombreCompletoUsuario(rs.getString("nombre_usuario"));
+            solicitud.setAvatarUsuario(rs.getString("avatar_usuario"));
+            solicitud.setEmailUsuario(rs.getString("email_usuario"));
+        } catch (SQLException e) {
+            // Si falla, usar nombres originales
+            solicitud.setUsernameUsuario(rs.getString("username"));
+            solicitud.setNombreCompletoUsuario(rs.getString("nombre_completo"));
+            solicitud.setAvatarUsuario(rs.getString("avatar"));
+            solicitud.setEmailUsuario(rs.getString("email"));
+        }
+
+        return solicitud;
+    }
+
+    /**
+     * Mapear ResultSet a SolicitudMembresia (completo con admin y comunidad)
+     */
+    private SolicitudMembresia mapearSolicitudMembresiaCompleta(ResultSet rs) throws SQLException {
+        SolicitudMembresia solicitud = mapearSolicitudMembresia(rs);
+
+        // Datos adicionales del admin
+        solicitud.setUsernameAdmin(rs.getString("username_admin"));
+        solicitud.setNombreCompletoAdmin(rs.getString("nombre_admin"));
+
+        // Datos de la comunidad
+        solicitud.setNombreComunidad(rs.getString("nombre_comunidad"));
+        solicitud.setUsernameComunidad(rs.getString("username_comunidad"));
+
+        // ID admin respuesta
+        int idAdminRespuesta = rs.getInt("id_admin_respuesta");
+        if (!rs.wasNull()) {
+            solicitud.setIdAdminRespuesta(idAdminRespuesta);
+        }
+
+        solicitud.setMensajeRespuesta(rs.getString("mensaje_respuesta"));
+
+        return solicitud;
     }
 }

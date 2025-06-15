@@ -27,6 +27,17 @@
     if (usuarioActual != null) {
         tienePrivilegios = usuarioActual.isPrivilegio();
     }
+    Boolean tieneSolicitudPendiente = (Boolean) request.getAttribute("tieneSolicitudPendiente");
+    String estadoSolicitud = (String) request.getAttribute("estadoSolicitud");
+    Integer solicitudesPendientesCount = (Integer) request.getAttribute("solicitudesPendientesCount");
+    
+    // Valores por defecto
+    if (tieneSolicitudPendiente == null) tieneSolicitudPendiente = false;
+    if (solicitudesPendientesCount == null) solicitudesPendientesCount = 0;
+
+    Boolean puedeVerPublicaciones = (Boolean) request.getAttribute("puedeVerPublicaciones");
+    if (puedeVerPublicaciones == null) puedeVerPublicaciones = false;
+    
 %>
 
 <!DOCTYPE html>
@@ -1510,8 +1521,393 @@
                         padding: 15px;
                     }
                 }
-                
 
+    .btn-community-action {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+
+    .btn-join {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-join:hover {
+        background: linear-gradient(135deg, #218838, #1ea080);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-request {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+        color: white;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-request:hover {
+        background: linear-gradient(135deg, #0056b3, #520dc2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+    }
+
+    .btn-pending {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: #212529;
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .btn-cancel-request {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+
+    .btn-cancel-request:hover {
+        background: linear-gradient(135deg, #545b62, #383d41);
+        transform: translateY(-1px);
+    }
+
+    .btn-rejected {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .btn-request-again {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+    }
+
+    .btn-request-again:hover {
+        background: linear-gradient(135deg, #138496, #117a8b);
+        transform: translateY(-1px);
+    }
+
+    .btn-requests {
+        background: linear-gradient(135deg, #6f42c1, #5a30a0);
+        color: white;
+        position: relative;
+    }
+
+    .btn-requests:hover {
+        background: linear-gradient(135deg, #5a30a0, #4c2a85);
+        transform: translateY(-1px);
+    }
+
+    .btn-requests .badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        font-size: 10px;
+        padding: 3px 6px;
+        border-radius: 50%;
+        background: #ffc107;
+        color: #212529;
+        font-weight: 700;
+    }
+
+    .btn-login {
+        background: linear-gradient(135deg, #fd7e14, #e85d00);
+        color: white;
+    }
+
+    .btn-login:hover {
+        background: linear-gradient(135deg, #e85d00, #cc5200);
+        transform: translateY(-1px);
+    }
+
+    /* ============= ESTILOS PARA MODAL DE SOLICITUD ============= */
+
+    .modal-header.bg-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3) !important;
+        border-bottom: none;
+    }
+
+    .modal-header.bg-primary .close {
+        color: white !important;
+        text-shadow: none;
+        opacity: 0.8;
+    }
+
+    .modal-header.bg-primary .close:hover {
+        opacity: 1;
+    }
+
+    .community-icon {
+        animation: pulse-lock 2s infinite;
+    }
+
+    @keyframes pulse-lock {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .info-section .alert-info {
+        background: rgba(23, 162, 184, 0.1);
+        border: 1px solid rgba(23, 162, 184, 0.3);
+        color: #0c5460;
+    }
+
+    .info-section .alert-info ul {
+        padding-left: 1.2rem;
+    }
+
+    .info-section .alert-info li {
+        margin-bottom: 0.3rem;
+    }
+
+    #contadorCaracteres.text-warning {
+        color: #856404 !important;
+        font-weight: 600;
+    }
+
+    #contadorCaracteres.text-danger {
+        color: #721c24 !important;
+        font-weight: 600;
+    }
+
+    /* ============= INDICADORES DE ESTADO EN LISTA DE COMUNIDADES ============= */
+
+    .community-privacy-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .privacy-public {
+        background: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .privacy-private {
+        background: rgba(255, 193, 7, 0.1);
+        color: #856404;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .request-status-badge {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+
+    .status-approved {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    /* ============= RESPONSIVE DESIGN ============= */
+
+    @media (max-width: 768px) {
+        .btn-community-action {
+            font-size: 12px;
+            padding: 8px 12px;
+            margin: 2px;
+        }
+
+        .btn-requests .badge {
+            top: -3px;
+            right: -3px;
+            font-size: 9px;
+            padding: 2px 4px;
+        }
+
+        .action-buttons {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .action-buttons {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-community-action {
+            justify-content: center;
+            margin: 3px 0;
+            width: 100%;
+        }
+    }
+
+    /* ============= ANIMACIONES ADICIONALES ============= */
+
+    .btn-community-action:active {
+        transform: translateY(0);
+    }
+
+    .btn-community-action:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+        transform: none !important;
+    }
+
+    .btn-community-action:disabled:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    /* ============= TOOLTIP PARA BOTONES DESHABILITADOS ============= */
+
+    .btn-pending[data-toggle="tooltip"] {
+        position: relative;
+    }
+
+    .btn-rejected[data-toggle="tooltip"] {
+        position: relative;
+    }
+
+    /* ============= EFECTOS DE CARGA ============= */
+
+    .btn-loading {
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .btn-loading i {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* ============= ESTILOS PARA NOTIFICACIONES EN TIEMPO REAL ============= */
+
+    .notification-dot {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 8px;
+        height: 8px;
+        background: #dc3545;
+        border-radius: 50%;
+        animation: pulse-notification 2s infinite;
+    }
+
+    @keyframes pulse-notification {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ============= MEJORAS VISUALES PARA MODAL ============= */
+
+    .modal-dialog-centered {
+        min-height: calc(100% - 1rem);
+    }
+
+    .modal-content {
+        border: none;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .modal-footer {
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        padding: 1rem 2rem;
+    }
+
+    /* ============= INDICADORES DE PROGRESO ============= */
+
+    .progress-indicator {
+        height: 3px;
+        background: rgba(0, 123, 255, 0.2);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #007bff, #6610f2);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+
+    /* ============= ESTADOS HOVER MEJORADOS ============= */
+
+    .btn-community-action:not(:disabled):hover {
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-community-action:not(:disabled):focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    }
+    
+    .restricted-content {
+       display: flex;
+       justify-content: center;
+       align-items: center;
+       min-height: 400px;
+       background: #f8f9fa;
+       border-radius: 15px;
+       margin: 20px 0;
+   }
+
+   .restriction-message {
+       text-align: center;
+       padding: 40px;
+       max-width: 500px;
+   }
+
+   .restriction-message h3 {
+       color: #495057;
+       margin-bottom: 15px;
+   }
+
+   .restriction-message p {
+       color: #6c757d;
+       margin-bottom: 20px;
+   }
 </style>
 </head>
 
@@ -1546,29 +1942,85 @@
                                 <div class="action-buttons">
                                     <% if (usuarioActual != null) { %>
                                         <% if (comunidad.isUsuarioEsSeguidor()) { %>
+                                            <!-- Usuario ya es miembro -->
                                             <% if (comunidad.isUsuarioEsCreador()) { %>
                                                 <a href="ComunidadServlet?action=edit&id=<%= comunidad.getIdComunidad() %>" 
                                                    class="btn-community-action btn-edit">
-                                                    <i class="fas fa-edit"></i>Editar
+                                                    <i class="fas fa-edit"></i> Editar
                                                 </a>
+                                                <a href="ComunidadServlet?action=requests&id=<%= comunidad.getIdComunidad() %>" 
+                                                   class="btn-community-action btn-requests">
+                                                    <i class="fas fa-clipboard-list"></i> 
+                                                    Solicitudes
+                                                    <%
+                                                        if (solicitudesPendientesCount > 0) {
+                                                    %>
+                                                        <span class="badge badge-warning"><%= solicitudesPendientesCount %></span>
+                                                    <% } %>
+                                                </a>
+                                            <% } else if (comunidad.isUsuarioEsAdmin()) { %>
+                                                <a href="ComunidadServlet?action=requests&id=<%= comunidad.getIdComunidad() %>" 
+                                                   class="btn-community-action btn-requests">
+                                                    <i class="fas fa-clipboard-list"></i> 
+                                                    Solicitudes
+                                                    <%
+                                                        if (solicitudesPendientesCount > 0) {
+                                                    %>
+                                                        <span class="badge badge-warning"><%= solicitudesPendientesCount %></span>
+                                                    <% } %>
+                                                </a>
+                                                        <button class="btn-community-action btn-leave" style="width: 100%;" 
+                                                                onclick="confirmarSalirComunidad(<%= comunidad.getIdComunidad() %>, '<%= comunidad.getNombre().replace("'", "\\'") %>')">
+                                                            <i class="fas fa-sign-out-alt"></i> Salir
+                                                        </button>
                                             <% } else { %>
-                                                <form method="post" action="ComunidadServlet" style="display: inline;">
-                                                    <input type="hidden" name="action" value="leave">
-                                                    <input type="hidden" name="idComunidad" value="<%= comunidad.getIdComunidad() %>">
-                                                    <button type="submit" class="btn-community-action btn-leave">
-                                                        <i class="fas fa-sign-out-alt"></i>Salir
-                                                    </button>
-                                                </form>
+                                                <!-- Miembro regular -->
+                                                        <button class="btn-community-action btn-leave" style="width: 100%;" 
+                                                                onclick="confirmarSalirComunidad(<%= comunidad.getIdComunidad() %>, '<%= comunidad.getNombre().replace("'", "\\'") %>')">
+                                                            <i class="fas fa-sign-out-alt"></i> Salir
+                                                        </button>
                                             <% } %>
                                         <% } else { %>
-                                            <form method="post" action="ComunidadServlet" style="display: inline;">
-                                                <input type="hidden" name="action" value="join">
-                                                <input type="hidden" name="idComunidad" value="<%= comunidad.getIdComunidad() %>">
-                                                <button type="submit" class="btn-community-action btn-join">
-                                                    <i class="fas fa-plus"></i>Unirse
+                                            <!-- Usuario NO es miembro -->
+                                            <% if (comunidad.isEsPublica()) { %>
+                                                <!-- Comunidad pública: unirse directamente -->
+                                                <button type="button" class="btn-community-action btn-join" onclick="unirseAComunidad(<%= comunidad.getIdComunidad() %>)">
+                                                    <i class="fas fa-plus"></i> Unirse
                                                 </button>
-                                            </form>
+                                            <% } else { %>
+                                                <!-- Comunidad privada: diferentes estados -->
+                                                <% if (tieneSolicitudPendiente) { %>
+                                                    <!-- Tiene solicitud pendiente -->
+                                                    <button type="button" class="btn-community-action btn-pending" disabled>
+                                                        <i class="fas fa-clock"></i> Solicitud Pendiente
+                                                    </button>
+                                                    <button type="button" class="btn-community-action btn-cancel-request" 
+                                                            onclick="cancelarSolicitud(<%= comunidad.getIdComunidad() %>)">
+                                                        <i class="fas fa-times"></i> Cancelar Solicitud
+                                                    </button>
+                                                <% } else if ("rechazada".equals(estadoSolicitud)) { %>
+                                                    <!-- Solicitud rechazada anteriormente -->
+                                                    <button type="button" class="btn-community-action btn-rejected" disabled>
+                                                        <i class="fas fa-times-circle"></i> Solicitud Rechazada
+                                                    </button>
+                                                    <button type="button" class="btn-community-action btn-request-again" 
+                                                            data-toggle="modal" data-target="#solicitarMembresiaModal">
+                                                        <i class="fas fa-redo"></i> Solicitar Nuevamente
+                                                    </button>
+                                                <% } else { %>
+                                                    <!-- Primera vez o puede solicitar -->
+                                                    <button type="button" class="btn-community-action btn-request" 
+                                                            data-toggle="modal" data-target="#solicitarMembresiaModal">
+                                                        <i class="fas fa-paper-plane"></i> Solicitar Unirse
+                                                    </button>
+                                                <% } %>
+                                            <% } %>
                                         <% } %>
+                                    <% } else { %>
+                                        <!-- Usuario no logueado -->
+                                        <a href="LoginServlet" class="btn-community-action btn-login">
+                                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión para Unirse
+                                        </a>
                                     <% } %>
                                 </div>
 
@@ -1673,128 +2125,158 @@
 
                             <!-- CONTENEDOR DE PUBLICACIONES EXACTO DE HOME.JSP -->
                             <div id="publicacionesContainer">
-                                <% 
-                                if (publicaciones != null && !publicaciones.isEmpty()) {
-                                    for (Publicacion pub : publicaciones) {
-                                        @SuppressWarnings("unchecked")
-                                        List<Comentario> comentarios = (List<Comentario>) request.getAttribute("comentarios_" + pub.getIdPublicacion());
-                                %>
-                                        <div class="post-container" data-post-id="<%= pub.getIdPublicacion() %>">
-                                            <div class="post-header">
-                                                <img src="<%= pub.getAvatarUsuario() != null ? pub.getAvatarUsuario() : "assets/images/avatars/default.png" %>" 
-                                                     alt="Avatar">
-                                                <div class="user-info">
-                                                    <span class="username"><%= pub.getNombreCompleto() != null ? pub.getNombreCompleto() : "Nombre" %></span>
-                                                    <span class="handle"><%= pub.getNombreUsuario() != null ? pub.getNombreUsuario() : "@usuario" %></span>
-                                                    <span class="post-time"><%= pub.getTiempoTranscurrido() %></span>
-                                                </div>
-                                            </div>
-
-                                            <div class="post-content">
-                                                <p><%= pub.getTexto() %></p>
-                                                
-                                                <% if (pub.getImagenUrl() != null && !pub.getImagenUrl().trim().isEmpty()) { %>
-                                                    <div class="post-image" style="background-image: url('<%= pub.getImagenUrl() %>')"></div>
-                                                <% } %>
-                                            </div>
-                                                <!-- Acciones EXACTAS DE HOME.JSP -->
-                                                <div class="post-actions d-flex flex-wrap justify-content-between align-items-center">
-                                                <button class="action-button btn flex-grow-1 text-center me-2 mb-2" 
-                                                        onclick="toggleLike(<%= pub.getIdPublicacion() %>)" 
-                                                        id="likeBtn_<%= pub.getIdPublicacion() %>"
-                                                        data-user-liked="<%= pub.isUsuarioDioLike() %>">
-                                                    <i class="<%= pub.isUsuarioDioLike() ? "fas" : "far" %> fa-heart"></i> 
-                                                    <span id="likeCount_<%= pub.getIdPublicacion() %>"><%= pub.getCantidadLikes() %></span>
-                                                </button>
-                                                    
-                                                <button class="action-button btn flex-grow-1 text-center me-2 mb-2" 
-                                                        onclick="toggleComments(<%= pub.getIdPublicacion() %>)">
-                                                    <i class="fas fa-comment"></i> <span id="commentCount_<%= pub.getIdPublicacion() %>"><%= pub.getCantidadComentarios() %></span>
-                                                </button>
-                                                    
-                                                <% if (pub.isPermiteDonacion()) { %>
-                                                    <button class="action-button btn flex-grow-1 text-center mb-2" 
-                                                            data-creator-id="<%= pub.getIdUsuario() %>"
-                                                            onclick="openDonationModal(<%= pub.getIdPublicacion() %>, '<%= pub.getNombreCompleto() != null ? pub.getNombreCompleto().replace("'", "\\'") : "Usuario" %>', '<%= pub.getNombreUsuario() != null ? pub.getNombreUsuario().replace("'", "\\'") : "@usuario" %>', <%= pub.getIdUsuario() %>)"
-                                                            <%= (usuarioActual != null && pub.getIdUsuario() == usuarioActual.getId()) ? "disabled" : "" %>>
-                                                        <i class="fas fa-gift"></i> Regalar
-                                                        <% if (pub.getTotalDonaciones() > 0) { %>
-                                                            <small>($<%= String.format("%.2f", pub.getTotalDonaciones()) %>)</small>
-                                                        <% } %>   
-                                                    </button>
-                                                <% } %>
-                                                    
+                                <% if (puedeVerPublicaciones) { %>
+                                    <% 
+                                    if (publicaciones != null && !publicaciones.isEmpty()) {
+                                        for (Publicacion pub : publicaciones) {
+                                            @SuppressWarnings("unchecked")
+                                            List<Comentario> comentarios = (List<Comentario>) request.getAttribute("comentarios_" + pub.getIdPublicacion());
+                                    %>
+                                            <div class="post-container" data-post-id="<%= pub.getIdPublicacion() %>">
+                                                <div class="post-header">
+                                                    <img src="<%= pub.getAvatarUsuario() != null ? pub.getAvatarUsuario() : "assets/images/avatars/default.png" %>" 
+                                                         alt="Avatar">
+                                                    <div class="user-info">
+                                                        <span class="username"><%= pub.getNombreCompleto() != null ? pub.getNombreCompleto() : "Nombre" %></span>
+                                                        <span class="handle"><%= pub.getNombreUsuario() != null ? pub.getNombreUsuario() : "@usuario" %></span>
+                                                        <span class="post-time"><%= pub.getTiempoTranscurrido() %></span>
+                                                    </div>
                                                 </div>
 
-                                                <!-- SECCIÓN DE COMENTARIOS EXACTA DE HOME.JSP -->
-                                                <div class="comments-section" id="commentsSection_<%= pub.getIdPublicacion() %>" style="display: none;">
-                                                    <div id="commentsList_<%= pub.getIdPublicacion() %>">
+                                                <div class="post-content">
+                                                    <p><%= pub.getTexto() %></p>
 
-                                                    <!-- Lista de comentarios existentes EXACTA DE HOME.JSP -->
-                                                    <% if (comentarios != null && !comentarios.isEmpty()) { %>
-                                                        <% for (Comentario comentario : comentarios) { %>
-                                                            <div class="comment" data-comment-id="<%= comentario.getIdComentario() %>"
-                                                                 data-author-name="<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario() : "Usuario" %>">
-                                                                <img src="<%= comentario.getAvatarUsuario() != null ? comentario.getAvatarUsuario() : "assets/images/avatars/default.png" %>" 
-                                                                     alt="Avatar"
-                                                                     onerror="this.src='assets/images/avatars/default.png'">
-                                                                <div class="comment-content">
-                                                                    <div class="comment-text">
-                                                                        <strong>@<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario() : "Usuario" %></strong>: <%= comentario.getContenido() %>
-                                                                    </div>
-                                                                    <div class="comment-info">
-                                                                        <span><%= comentario.getHoraFormateada() %></span>
-                                                                        <% if (usuarioActual != null && (usuarioActual.getId() == comentario.getIdUsuario() || usuarioActual.isPrivilegio())) { %>
-                                                                            <div class="comment-actions" style="float: right;">
-                                                                                <button class="btn btn-sm btn-outline-primary" 
-                                                                                        onclick="editarComentario(<%= comentario.getIdComentario() %>, '<%= comentario.getContenido().replace("'", "\\'").replace("\"", "\\\"") %>')" 
-                                                                                        title="Editar comentario">
-                                                                                    <i class="fas fa-edit"></i>
-                                                                                </button>
-                                                                                <button class="btn btn-sm btn-outline-danger" 
-                                                                                        onclick="eliminarComentario(<%= comentario.getIdComentario() %>, '<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario().replace("'", "\\'") : "Usuario" %>')" 
-                                                                                        title="Eliminar comentario">
-                                                                                    <i class="fas fa-trash"></i>
-                                                                                </button>
-                                                                            </div>
-                                                                        <% } %>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        <% } %>
+                                                    <% if (pub.getImagenUrl() != null && !pub.getImagenUrl().trim().isEmpty()) { %>
+                                                        <div class="post-image" style="background-image: url('<%= pub.getImagenUrl() %>')"></div>
                                                     <% } %>
                                                 </div>
-                                                <% if (usuarioActual != null) { %>
-                                                <!-- Formulario para nuevo comentario -->
-                                                <div class="new-comment">
-                                                    <input type="text" placeholder="Escriba un comentario..." 
-                                                           id="commentInput_<%= pub.getIdPublicacion() %>" 
-                                                           onkeypress="handleCommentKeyPress(event, <%= pub.getIdPublicacion() %>)">
-                                                    <button onclick="addComment(<%= pub.getIdPublicacion() %>)">
-                                                        <i class="fas fa-paper-plane"></i>
+                                                    <!-- Acciones EXACTAS DE HOME.JSP -->
+                                                    <div class="post-actions d-flex flex-wrap justify-content-between align-items-center">
+                                                    <button class="action-button btn flex-grow-1 text-center me-2 mb-2" 
+                                                            onclick="toggleLike(<%= pub.getIdPublicacion() %>)" 
+                                                            id="likeBtn_<%= pub.getIdPublicacion() %>"
+                                                            data-user-liked="<%= pub.isUsuarioDioLike() %>">
+                                                        <i class="<%= pub.isUsuarioDioLike() ? "fas" : "far" %> fa-heart"></i> 
+                                                        <span id="likeCount_<%= pub.getIdPublicacion() %>"><%= pub.getCantidadLikes() %></span>
                                                     </button>
+
+                                                    <button class="action-button btn flex-grow-1 text-center me-2 mb-2" 
+                                                            onclick="toggleComments(<%= pub.getIdPublicacion() %>)">
+                                                        <i class="fas fa-comment"></i> <span id="commentCount_<%= pub.getIdPublicacion() %>"><%= pub.getCantidadComentarios() %></span>
+                                                    </button>
+
+                                                    <% if (pub.isPermiteDonacion()) { %>
+                                                        <button class="action-button btn flex-grow-1 text-center mb-2" 
+                                                                data-creator-id="<%= pub.getIdUsuario() %>"
+                                                                onclick="openDonationModal(<%= pub.getIdPublicacion() %>, '<%= pub.getNombreCompleto() != null ? pub.getNombreCompleto().replace("'", "\\'") : "Usuario" %>', '<%= pub.getNombreUsuario() != null ? pub.getNombreUsuario().replace("'", "\\'") : "@usuario" %>', <%= pub.getIdUsuario() %>)"
+                                                                <%= (usuarioActual != null && pub.getIdUsuario() == usuarioActual.getId()) ? "disabled" : "" %>>
+                                                            <i class="fas fa-gift"></i> Regalar
+                                                            <% if (pub.getTotalDonaciones() > 0) { %>
+                                                                <small>($<%= String.format("%.2f", pub.getTotalDonaciones()) %>)</small>
+                                                            <% } %>   
+                                                        </button>
+                                                    <% } %>
+
+                                                    </div>
+
+                                                    <!-- SECCIÓN DE COMENTARIOS EXACTA DE HOME.JSP -->
+                                                    <div class="comments-section" id="commentsSection_<%= pub.getIdPublicacion() %>" style="display: none;">
+                                                        <div id="commentsList_<%= pub.getIdPublicacion() %>">
+
+                                                        <!-- Lista de comentarios existentes EXACTA DE HOME.JSP -->
+                                                        <% if (comentarios != null && !comentarios.isEmpty()) { %>
+                                                            <% for (Comentario comentario : comentarios) { %>
+                                                                <div class="comment" data-comment-id="<%= comentario.getIdComentario() %>"
+                                                                     data-author-name="<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario() : "Usuario" %>">
+                                                                    <img src="<%= comentario.getAvatarUsuario() != null ? comentario.getAvatarUsuario() : "assets/images/avatars/default.png" %>" 
+                                                                         alt="Avatar"
+                                                                         onerror="this.src='assets/images/avatars/default.png'">
+                                                                    <div class="comment-content">
+                                                                        <div class="comment-text">
+                                                                            <strong>@<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario() : "Usuario" %></strong>: <%= comentario.getContenido() %>
+                                                                        </div>
+                                                                        <div class="comment-info">
+                                                                            <span><%= comentario.getHoraFormateada() %></span>
+                                                                            <% if (usuarioActual != null && (usuarioActual.getId() == comentario.getIdUsuario() || usuarioActual.isPrivilegio())) { %>
+                                                                                <div class="comment-actions" style="float: right;">
+                                                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                                                            onclick="editarComentario(<%= comentario.getIdComentario() %>, '<%= comentario.getContenido().replace("'", "\\'").replace("\"", "\\\"") %>')" 
+                                                                                            title="Editar comentario">
+                                                                                        <i class="fas fa-edit"></i>
+                                                                                    </button>
+                                                                                    <button class="btn btn-sm btn-outline-danger" 
+                                                                                            onclick="eliminarComentario(<%= comentario.getIdComentario() %>, '<%= comentario.getNombreUsuario() != null ? comentario.getNombreUsuario().replace("'", "\\'") : "Usuario" %>')" 
+                                                                                            title="Eliminar comentario">
+                                                                                        <i class="fas fa-trash"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            <% } %>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            <% } %>
+                                                        <% } %>
+                                                    </div>
+                                                    <% if (usuarioActual != null) { %>
+                                                    <!-- Formulario para nuevo comentario -->
+                                                    <div class="new-comment">
+                                                        <input type="text" placeholder="Escriba un comentario..." 
+                                                               id="commentInput_<%= pub.getIdPublicacion() %>" 
+                                                               onkeypress="handleCommentKeyPress(event, <%= pub.getIdPublicacion() %>)">
+                                                        <button onclick="addComment(<%= pub.getIdPublicacion() %>)">
+                                                            <i class="fas fa-paper-plane"></i>
+                                                        </button>
+                                                    </div>
+                                                    <% } %>
                                                 </div>
-                                                <% } %>
                                             </div>
+                                    <%
+                                        }
+                                    } else {
+                                    %>
+                                        <div class="no-posts">
+                                            <i class="fas fa-newspaper"></i>
+                                            <h4>No hay publicaciones en esta comunidad</h4>
+                                            <p>Esta comunidad aún no tiene publicaciones.</p>
+                                            <% if (puedePublicar) { %>
+                                                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#postModal" 
+                                                        style="padding: 8px 16px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                                                    <i class="fas fa-plus" style="font-size: 11px;"></i>Crear Primera Publicación
+                                                </button>
+                                            <% } %>
                                         </div>
-                                <%
+                                    <%
                                     }
-                                } else {
-                                %>
-                                    <div class="no-posts">
-                                        <i class="fas fa-newspaper"></i>
-                                        <h4>No hay publicaciones en esta comunidad</h4>
-                                        <p>Esta comunidad aún no tiene publicaciones.</p>
-                                        <% if (puedePublicar) { %>
-                                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#postModal" 
-                                                    style="padding: 8px 16px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-                                                <i class="fas fa-plus" style="font-size: 11px;"></i>Crear Primera Publicación
-                                            </button>
-                                        <% } %>
+                                    %>
+                                <% } else { %>
+                                    <!-- ❌ MOSTRAR MENSAJE DE ACCESO RESTRINGIDO -->
+                                    <div class="restricted-content">
+                                        <div class="restriction-message">
+                                            <i class="fas fa-lock" style="font-size: 4rem; color: #ffc107; margin-bottom: 20px;"></i>
+                                            <h3>Contenido Privado</h3>
+                                            <p>Esta es una comunidad privada. Necesitas ser miembro para ver las publicaciones.</p>
+
+                                            <% if (usuarioActual != null) { %>
+                                                <% if (tieneSolicitudPendiente) { %>
+                                                    <p class="text-muted">Tu solicitud está siendo revisada por los administradores.</p>
+                                                <% } else if ("rechazada".equals(estadoSolicitud)) { %>
+                                                    <p class="text-warning">Tu solicitud anterior fue rechazada.</p>
+                                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#solicitarMembresiaModal">
+                                                        <i class="fas fa-redo"></i> Solicitar Nuevamente
+                                                    </button>
+                                                <% } else { %>
+                                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#solicitarMembresiaModal">
+                                                        <i class="fas fa-paper-plane"></i> Solicitar Acceso
+                                                    </button>
+                                                <% } %>
+                                            <% } else { %>
+                                                <a href="LoginServlet" class="btn btn-primary">
+                                                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión para Solicitar Acceso
+                                                </a>
+                                            <% } %>
+                                        </div>
                                     </div>
-                                <%
-                                }
-                                %>
+                                <% } %>
                             </div>
                             <!-- SECCIÓN DE MIEMBROS ABAJO -->
                             <div class="content-section">
@@ -2009,6 +2491,71 @@
                 </div>
             </div>
 
+        <!-- Modal para Solicitar Membresía (solo si es comunidad privada) -->
+        <% if (!comunidad.isEsPublica()) { %>
+        <div class="modal fade" id="solicitarMembresiaModal" tabindex="-1" role="dialog" aria-labelledby="solicitarMembresiaModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <!-- Header con colores -->
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="solicitarMembresiaModalLabel">
+                            <i class="fas fa-paper-plane"></i> Solicitar Unirse a la Comunidad
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <!-- Cuerpo del modal -->
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <div class="community-icon mb-3">
+                                <i class="fas fa-lock text-warning" style="font-size: 3rem;"></i>
+                            </div>
+                            <h5><strong><%= comunidad.getNombre() %></strong> es una comunidad privada</h5>
+                            <p class="text-muted">Tu solicitud será revisada por los administradores antes de que puedas acceder al contenido.</p>
+                        </div>
+
+                        <div class="info-section mb-4">
+                            <div class="alert alert-info" role="alert">
+                                <h6><i class="fas fa-info-circle"></i> ¿Qué sucede después?</h6>
+                                <ul class="mb-0">
+                                    <li>Los administradores revisarán tu solicitud</li>
+                                    <li>Recibirás una notificación con la respuesta</li>
+                                    <li>Si es aprobada, tendrás acceso inmediato</li>
+                                    <li>Puedes cancelar tu solicitud en cualquier momento</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="mensajeSolicitud">
+                                <strong>Mensaje para los administradores (opcional):</strong>
+                            </label>
+                            <textarea class="form-control" 
+                                      id="mensajeSolicitud" 
+                                      rows="4" 
+                                      maxlength="500"
+                                      placeholder="¿Por qué quieres unirte a esta comunidad? ¿Qué puedes aportar?"></textarea>
+                            <small class="form-text text-muted">
+                                <span id="contadorCaracteres">0</span>/500 caracteres
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Footer del modal -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnEnviarSolicitud" onclick="enviarSolicitudMembresia()">
+                            <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% } %>
            <!-- Modal simple para resultados de pago -->
            <div class="modal fade" id="paymentResultModal" tabindex="-1" role="dialog">
                <div class="modal-dialog modal-dialog-centered" role="document">
@@ -2468,7 +3015,89 @@
                     <% } %>
                 <% } %>
             }
-
+            window.confirmarSalirComunidad = function(idComunidad, nombreComunidad) {
+                var modalHtml = '<div class="modal fade" id="modalSalir" tabindex="-1" role="dialog">' +
+                    '<div class="modal-dialog modal-dialog-centered" role="document">' +
+                        '<div class="modal-content">' +
+                            '<div class="modal-header bg-warning text-dark">' +
+                                '<h5 class="modal-title">' +
+                                    '<i class="fas fa-sign-out-alt"></i> Salir de Comunidad' +
+                                '</h5>' +
+                                '<button type="button" class="close" data-dismiss="modal">' +
+                                    '<span>&times;</span>' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="modal-body">' +
+                                '<p class="mb-3">' +
+                                    '¿Estás seguro de que deseas salir de <strong>' + escapeHtml(nombreComunidad) + '</strong>?' +
+                                '</p>' +
+                                '<div class="alert alert-warning">' +
+                                    '<i class="fas fa-exclamation-triangle"></i> ' +
+                                    'Perderás acceso a las publicaciones y deberás solicitar unirte nuevamente para volver.' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="modal-footer">' +
+                                '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
+                                    '<i class="fas fa-times"></i> Cancelar' +
+                                '</button>' +
+                                '<button type="button" class="btn btn-warning" id="btnConfirmarSalida">' +
+                                    '<i class="fas fa-sign-out-alt"></i> Salir de Comunidad' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+                
+                // Remover modal anterior si existe
+                $('#modalSalir').remove();
+                
+                // Agregar nuevo modal al DOM
+                $('body').append(modalHtml);
+                
+                // Mostrar modal
+                $('#modalSalir').modal('show');
+                
+                // Manejar confirmación
+                $('#btnConfirmarSalida').off('click').on('click', function() {
+                    var $btn = $(this);
+                    var originalText = $btn.html();
+                    
+                    // Mostrar loading
+                    $btn.html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+                    $btn.prop('disabled', true);
+                    
+                    $.ajax({
+                        url: 'ComunidadServlet',
+                        type: 'POST',
+                        data: {
+                            action: 'leave',
+                            idComunidad: idComunidad
+                        },
+                        success: function(response) {
+                            $('#modalSalir').modal('hide');
+                            if (response.success) {
+                                showSuccess(response.message);
+                                
+                                // Actualizar la tarjeta de la comunidad
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            } else {
+                                showError(response.message || 'Error al salir de la comunidad');
+                            }
+                        },
+                        error: function() {
+                            $('#modalSalir').modal('hide');
+                            showError('Error de conexión al salir de la comunidad');
+                        },
+                        complete: function() {
+                            $btn.html(originalText);
+                            $btn.prop('disabled', false);
+                        }
+                    });
+                });
+            };
+            
             // ========== SISTEMA DE COMENTARIOS ==========
             function toggleComments(idPublicacion) {
                 var commentsSection = $('#commentsSection_' + idPublicacion);
@@ -3397,4 +4026,135 @@
             }
         window.currentPage = 'community';
         window.communityId = '<%= comunidad != null ? comunidad.getIdComunidad() : "" %>';
+        
+        function unirseAComunidad(idComunidad) {
+            console.log('🚀 Uniéndose a comunidad:', idComunidad);
+
+            $.ajax({
+                url: 'ComunidadServlet',
+                type: 'POST',
+                data: {
+                    action: 'join',
+                    idComunidad: idComunidad
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        showSuccess(response.message);
+                        // Recargar página después de un momento
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        if (response.type === 'private_community') {
+                            // Es comunidad privada, abrir modal
+                            $('#solicitarMembresiaModal').modal('show');
+                        } else {
+                            showError(response.message);
+                        }
+                    }
+                },
+                error: function() {
+                    showError('Error de conexión al unirse a la comunidad');
+                }
+            });
+        }
+
+        // Función para enviar solicitud de membresía
+        function enviarSolicitudMembresia() {
+            const mensaje = $('#mensajeSolicitud').val();
+            const idComunidad = <%= comunidad.getIdComunidad() %>;
+
+            console.log('📝 Enviando solicitud de membresía:', {
+                idComunidad: idComunidad,
+                mensaje: mensaje.substring(0, 50) + '...'
+            });
+
+            // Deshabilitar botón mientras se envía
+            $('#btnEnviarSolicitud').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+
+            $.ajax({
+                url: 'ComunidadServlet',
+                type: 'POST',
+                data: {
+                    action: 'requestMembership',
+                    idComunidad: idComunidad,
+                    mensaje: mensaje
+                },
+                dataType: 'json',
+                success: function(response) {
+                    $('#btnEnviarSolicitud').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar Solicitud');
+
+                    if (response.success) {
+                        $('#solicitarMembresiaModal').modal('hide');
+                        showSuccess(response.message);
+
+                        // Recargar página para mostrar estado actualizado
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function() {
+                    $('#btnEnviarSolicitud').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Enviar Solicitud');
+                    showError('Error de conexión al enviar la solicitud');
+                }
+            });
+        }
+
+        // Función para cancelar solicitud
+        function cancelarSolicitud(idComunidad) {
+            if (confirm('¿Estás seguro de que quieres cancelar tu solicitud de membresía?')) {
+                console.log('❌ Cancelando solicitud para comunidad:', idComunidad);
+
+                $.ajax({
+                    url: 'ComunidadServlet',
+                    type: 'POST',
+                    data: {
+                        action: 'cancelRequest',
+                        idComunidad: idComunidad
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            showSuccess(response.message);
+
+                            // Recargar página para mostrar estado actualizado
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showError(response.message);
+                        }
+                    },
+                    error: function() {
+                        showError('Error de conexión al cancelar la solicitud');
+                    }
+                });
+            }
+        }
+
+        // Contador de caracteres para el mensaje
+        $(document).ready(function() {
+            $('#mensajeSolicitud').on('input', function() {
+                const length = $(this).val().length;
+                $('#contadorCaracteres').text(length);
+
+                if (length > 450) {
+                    $('#contadorCaracteres').addClass('text-warning');
+                } else if (length > 480) {
+                    $('#contadorCaracteres').removeClass('text-warning').addClass('text-danger');
+                } else {
+                    $('#contadorCaracteres').removeClass('text-warning text-danger');
+                }
+            });
+
+            // Limpiar modal al cerrar
+            $('#solicitarMembresiaModal').on('hidden.bs.modal', function() {
+                $('#mensajeSolicitud').val('');
+                $('#contadorCaracteres').text('0').removeClass('text-warning text-danger');
+            });
+        });
         </script>
