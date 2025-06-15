@@ -775,7 +775,45 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
         
         return false; // Por defecto público
     }
-    
+
+    public boolean crearSolicitudVerificacion(int idUsuario, String motivo, String categoria, 
+                                             String documentoUrl, String enlaces) {
+        String sql = "INSERT INTO solicitudes_verificacion (id_usuario, motivo, categoria, documento_url, enlaces_adicionales) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conn = Conexion.getConexion(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            stmt.setString(2, motivo);
+            stmt.setString(3, categoria);
+            stmt.setString(4, documentoUrl);
+            stmt.setString(5, enlaces);
+
+            return stmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al crear solicitud de verificación: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean marcarSolicitudVerificacion(int idUsuario) {
+        String sql = "UPDATE usuarios SET solicito_verificacion = true WHERE id = ?";
+
+        try (Connection conn = Conexion.getConexion(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            return stmt.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al marcar solicitud de verificación: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     // ============= MÉTODOS DE VALIDACIÓN =============
     
     @Override

@@ -336,7 +336,35 @@
             border-color: #007bff;
             box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
         }
-        
+        .form-control select,
+        select.form-control {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+
+            /* Centrado vertical del texto */
+            line-height: 1.5;
+            vertical-align: middle;
+
+            /* Altura fija */
+            height: 45px;
+            box-sizing: border-box;
+
+            /* Asegurar que el texto se vea centrado */
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+
+            /* Flecha personalizada */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
         .btn-primary {
             background: #007bff;
             border: none;
@@ -358,7 +386,144 @@
             border-radius: 8px;
             font-weight: 500;
         }
-        
+
+        .verification-status {
+            margin-bottom: 20px;
+        }
+
+        .verification-badge {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid;
+            background: #f8f9fa;
+        }
+
+        .verification-badge.verified {
+            border-color: #28a745;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .verification-badge.pending {
+            border-color: #ffc107;
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .verification-badge.unverified {
+            border-color: #6c757d;
+            background: #f8f9fa;
+            color: #495057;
+        }
+
+        .verification-badge i {
+            font-size: 2rem;
+        }
+
+        .badge-content h6 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+        }
+
+        .badge-content p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .verification-benefits {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #007bff;
+        }
+
+        .verification-benefits h6 {
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .verification-benefits ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .verification-benefits li {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background: rgba(0,123,255,0.05);
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-placeholder i {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .upload-placeholder p {
+            margin: 10px 0 5px 0;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .upload-placeholder small {
+            color: #6c757d;
+        }
+
+        .document-preview {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .document-preview img {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 5px;
+        }
+
+        .document-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .document-info i {
+            color: #007bff;
+        }
         @media (max-width: 768px) {
             .profile-content {
                 flex-direction: column;
@@ -377,6 +542,7 @@
                 grid-template-columns: 1fr;
             }
         }
+ 
     </style>
 </head>
 
@@ -515,13 +681,71 @@
                                     </span>
                                 <% } else { %>
                                     <span style="color: #ffc107;">
-                                        <i class="fas fa-clock"></i> Pendiente de verificación
+                                        <i class="fas fa-clock"></i> No Verificado
                                     </span>
                                 <% } %>
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div class="profile-card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-shield-check"></i>
+                                Verificación de Cuenta
+                            </div>
+                            <% if (!usuario.isVerificado() && !usuario.isSolicitoVerificacion()) { %>
+                                <button class="btn-edit" onclick="solicitarVerificacion()">
+                                    <i class="fas fa-check-circle"></i> Solicitar
+                                </button>
+                            <% } %>
+                        </div>
+
+                        <div class="verification-status">
+                            <% if (usuario.isVerificado()) { %>
+                                <!-- Usuario ya verificado -->
+                                <div class="verification-badge verified">
+                                    <i class="fas fa-check-circle"></i>
+                                    <div class="badge-content">
+                                        <h6>Cuenta Verificada</h6>
+                                        <p>Tu cuenta ha sido verificada exitosamente</p>
+                                    </div>
+                                </div>
+
+                            <% } else if (usuario.isSolicitoVerificacion()) { %>
+                                <!-- Solicitud pendiente -->
+                                <div class="verification-badge pending">
+                                    <i class="fas fa-clock"></i>
+                                    <div class="badge-content">
+                                        <h6>Solicitud Pendiente</h6>
+                                        <p>Tu solicitud de verificación está siendo revisada por nuestro equipo</p>
+                                    </div>
+                                </div>
+
+                            <% } else { %>
+                                <!-- Sin verificar -->
+                                <div class="verification-badge unverified">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <div class="badge-content">
+                                        <h6>Cuenta No Verificada</h6>
+                                        <p>Solicita la verificación para obtener la insignia azul y mayor credibilidad</p>
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>
+
+                        <% if (!usuario.isVerificado() && !usuario.isSolicitoVerificacion()) { %>
+                            <div class="verification-benefits">
+                                <h6>Beneficios de la verificación:</h6>
+                                <ul>
+                                    <li><i class="fas fa-check text-success"></i> Insignia de verificación azul</li>
+                                    <li><i class="fas fa-check text-success"></i> Mayor credibilidad en la plataforma</li>
+                                    <li><i class="fas fa-check text-success"></i> Prioridad en el soporte técnico</li>
+                                    <li><i class="fas fa-check text-success"></i> Acceso a funciones exclusivas</li>
+                                </ul>
+                            </div>
+                        <% } %>
+                    </div>
                     <!-- Estadísticas de Actividad -->
                     <div class="profile-card" style="grid-column: 1 / -1;">
                         <div class="card-header">
@@ -701,7 +925,131 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Modal para Solicitar Verificación -->
+    <div class="modal fade" id="verificacionModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-shield-check"></i> Solicitar Verificación de Cuenta
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="formSolicitarVerificacion" onsubmit="enviarSolicitudVerificacion(event)" enctype="multipart/form-data">
+                    <div class="modal-body">
+
+                        <!-- Información importante -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Información importante:</strong> 
+                            La verificación está destinada a cuentas de interés público, 
+                            figuras reconocidas, empresas oficiales o creadores de contenido destacados.
+                        </div>
+
+                        <!-- Contraseña actual para seguridad -->
+                        <div class="form-group">
+                            <label for="passwordVerificacion">
+                                <i class="fas fa-lock"></i> Contraseña Actual *
+                            </label>
+                            <input type="password" class="form-control" id="passwordVerificacion" 
+                                   placeholder="Confirma tu identidad con tu contraseña" required>
+                            <small class="form-text text-muted">
+                                Requerido por seguridad para procesar la solicitud
+                            </small>
+                        </div>
+
+                        <!-- Motivo de la solicitud -->
+                        <div class="form-group">
+                            <label for="motivoVerificacion">
+                                <i class="fas fa-comment-alt"></i> Motivo de la Solicitud *
+                            </label>
+                            <textarea class="form-control" id="motivoVerificacion" rows="4" 
+                                      placeholder="Explica por qué tu cuenta debería ser verificada..." 
+                                      maxlength="500" required></textarea>
+                            <small class="form-text text-muted">
+                                <span id="contadorCaracteres">0</span>/500 caracteres
+                            </small>
+                        </div>
+
+                        <!-- Categoría de verificación -->
+                        <div class="form-group">
+                            <label for="categoriaVerificacion">
+                                <i class="fas fa-tags"></i> Categoría *
+                            </label>
+                            <select class="form-control" id="categoriaVerificacion" required>
+                                <option value="">Selecciona una categoría</option>
+                                <option value="figura_publica">Figura Pública</option>
+                                <option value="empresa_oficial">Empresa u Organización Oficial</option>
+                                <option value="creador_contenido">Creador de Contenido</option>
+                                <option value="periodista">Periodista o Medio de Comunicación</option>
+                                <option value="deportista">Deportista</option>
+                                <option value="artista">Artista o Músico</option>
+                                <option value="influencer">Influencer</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <!-- Upload de identificación -->
+                        <div class="form-group">
+                            <label for="documentoIdentificacion">
+                                <i class="fas fa-id-card"></i> Documento de Identificación *
+                            </label>
+                            <div class="upload-area" id="uploadArea">
+                                <input type="file" class="form-control-file" id="documentoIdentificacion" 
+                                       accept="image/*,.pdf" required onchange="previewDocument(this)">
+                                <div class="upload-placeholder">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Haz clic para subir tu documento de identificación</p>
+                                    <small>Formatos permitidos: JPG, PNG, PDF (máx. 5MB)</small>
+                                </div>
+                            </div>
+                            <div id="documentPreview" class="document-preview" style="display: none;">
+                                <!-- Preview del documento -->
+                            </div>
+                            <small class="form-text text-muted">
+                                Sube una copia de tu identificación oficial (cédula, pasaporte, licencia) 
+                                o documento que acredite tu identidad/posición.
+                            </small>
+                        </div>
+
+                        <!-- Enlaces adicionales (opcional) -->
+                        <div class="form-group">
+                            <label for="enlacesAdicionales">
+                                <i class="fas fa-link"></i> Enlaces Adicionales (Opcional)
+                            </label>
+                            <textarea class="form-control" id="enlacesAdicionales" rows="2" 
+                                      placeholder="Enlaces a redes sociales oficiales, sitio web, artículos de prensa, etc."></textarea>
+                            <small class="form-text text-muted">
+                                Enlaces que ayuden a verificar tu identidad (uno por línea)
+                            </small>
+                        </div>
+
+                        <!-- Términos y condiciones -->
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="aceptoTerminos" required>
+                            <label class="form-check-label" for="aceptoTerminos">
+                                Acepto que la información proporcionada es verídica y entiendo que 
+                                proporcionar información falsa puede resultar en la suspensión de mi cuenta.
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btnEnviarSolicitud">
+                            <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- Scripts -->
     <jsp:include page="/components/js_imports.jsp" />
     
@@ -808,7 +1156,56 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
-        
+
+
+        function previewDocument(input) {
+            var file = input.files[0];
+            var preview = document.getElementById('documentPreview');
+            var placeholder = document.querySelector('.upload-placeholder');
+
+            if (file) {
+                var fileType = file.type;
+                var fileName = file.name;
+                var fileSize = (file.size / 1024 / 1024).toFixed(2);
+
+                if (file.size > 5 * 1024 * 1024) {
+                    showError('El archivo es demasiado grande. Máximo 5MB.');
+                    input.value = '';
+                    return;
+                }
+
+                placeholder.style.display = 'none';
+                preview.style.display = 'block';
+
+                if (fileType.indexOf('image/') === 0) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = 
+                            '<div class="document-info">' +
+                                '<img src="' + e.target.result + '" alt="Preview">' +
+                                '<div>' +
+                                    '<strong>' + fileName + '</strong><br>' +
+                                    '<small>Tamaño: ' + fileSize + ' MB</small>' +
+                                '</div>' +
+                            '</div>';
+                    };
+                    reader.readAsDataURL(file);
+                } else if (fileType === 'application/pdf') {
+                    preview.innerHTML = 
+                        '<div class="document-info">' +
+                            '<i class="fas fa-file-pdf fa-3x text-danger"></i>' +
+                            '<div>' +
+                                '<strong>' + fileName + '</strong><br>' +
+                                '<small>Tamaño: ' + fileSize + ' MB</small>' +
+                            '</div>' +
+                        '</div>';
+                }
+            } else {
+                placeholder.style.display = 'block';
+                preview.style.display = 'none';
+            }
+        }
+
         // Cambiar avatar
         function cambiarAvatar(event) {
             event.preventDefault();
@@ -946,6 +1343,73 @@
         });
         
         console.log('🏠 Mi Perfil cargado correctamente');
+        
+        function solicitarVerificacion() {
+            $('#verificacionModal').modal('show');
+        }
+
+        // Contador de caracteres para el motivo
+        $('#motivoVerificacion').on('input', function() {
+            const length = $(this).val().length;
+            $('#contadorCaracteres').text(length);
+
+            if (length > 450) {
+                $('#contadorCaracteres').css('color', '#dc3545');
+            } else if (length > 400) {
+                $('#contadorCaracteres').css('color', '#ffc107');
+            } else {
+                $('#contadorCaracteres').css('color', '#6c757d');
+            }
+        });
+
+        // Enviar solicitud de verificación
+        function enviarSolicitudVerificacion(event) {
+            event.preventDefault();
+
+            const formData = new FormData();
+            formData.append('action', 'solicitarVerificacion');
+            formData.append('password', $('#passwordVerificacion').val());
+            formData.append('motivo', $('#motivoVerificacion').val());
+            formData.append('categoria', $('#categoriaVerificacion').val());
+            formData.append('enlaces', $('#enlacesAdicionales').val());
+
+            const documentFile = $('#documentoIdentificacion')[0].files[0];
+            if (documentFile) {
+                formData.append('documento', documentFile);
+            }
+
+            // Deshabilitar botón
+            $('#btnEnviarSolicitud').prop('disabled', true)
+                                    .html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+
+            $.ajax({
+                url: 'PerfilServlet',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    $('#btnEnviarSolicitud').prop('disabled', false)
+                                           .html('<i class="fas fa-paper-plane"></i> Enviar Solicitud');
+
+                    if (response.success) {
+                        $('#verificacionModal').modal('hide');
+                        showSuccess(response.message);
+
+                        // Recargar página para mostrar el nuevo estado
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showError(response.message);
+                    }
+                },
+                error: function() {
+                    $('#btnEnviarSolicitud').prop('disabled', false)
+                                           .html('<i class="fas fa-paper-plane"></i> Enviar Solicitud');
+                    showError('Error de conexión al enviar la solicitud');
+                }
+            });
+        }
     </script>
 </body>
 </html>

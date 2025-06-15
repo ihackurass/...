@@ -27,19 +27,20 @@ import pe.aquasocial.util.SessionUtil;
 
 @WebServlet(name = "PerfilServlet", urlPatterns = {"/PerfilServlet"})
 @MultipartConfig(
-    fileSizeThreshold = 1024 * 1024 * 1, // 1 MB
-    maxFileSize = 1024 * 1024 * 2,       // 2 MB
-    maxRequestSize = 1024 * 1024 * 5     // 5 MB
+        fileSizeThreshold = 1024 * 1024 * 1, // 1 MB
+        maxFileSize = 1024 * 1024 * 2, // 2 MB
+        maxRequestSize = 1024 * 1024 * 5 // 5 MB
 )
 public class PerfilServlet extends HttpServlet {
 
     private UsuarioDAO usuarioDAO;
     private ComunidadDAO comunidadDAO;
     private Gson gson;
-    
+
     // Directorio para subir avatares
     private static final String UPLOAD_DIR = "assets/images/avatars/";
     private static final String[] ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"};
+    private static final String VERIFICATION_UPLOAD_DIR = "assets/images/verificacion/";
 
     @Override
     public void init() throws ServletException {
@@ -58,15 +59,15 @@ public class PerfilServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         String action = request.getParameter("action");
-        
+
         if (action == null) {
             // Mostrar página de perfil
             request.getRequestDispatcher("/views/user/mi-perfil.jsp").forward(request, response);
             return;
         }
-        
+
         try {
             switch (action) {
                 case "getStats":
@@ -86,14 +87,14 @@ public class PerfilServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
         String action = request.getParameter("action");
-        
+
         if (action == null) {
             enviarErrorJSON(response, "Acción no especificada");
             return;
         }
-        
+
         try {
             switch (action) {
                 case "updateInfo":
@@ -104,6 +105,9 @@ public class PerfilServlet extends HttpServlet {
                     break;
                 case "changeAvatar":
                     cambiarAvatar(request, response);
+                    break;
+                case "solicitarVerificacion":
+                    procesarSolicitudVerificacion(request, response);
                     break;
                 default:
                     enviarErrorJSON(response, "Acción no válida");
@@ -121,40 +125,40 @@ public class PerfilServlet extends HttpServlet {
      */
     private void obtenerEstadisticas(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        
+
         Usuario usuario = SessionUtil.getLoggedUser(request);
         if (usuario == null) {
             enviarErrorJSON(response, "Usuario no autenticado");
             return;
         }
-        
+
         try {
             Map<String, Object> stats = new HashMap<>();
-            
+
             // Comunidades que sigue
             int comunidadesSeguidas = comunidadDAO.contarComunidadesSeguidas(usuario.getId());
             stats.put("comunidadesSeguidas", comunidadesSeguidas);
-            
+
             // Solicitudes enviadas
             int solicitudesEnviadas = comunidadDAO.contarSolicitudesUsuario(usuario.getId());
             stats.put("solicitudesEnviadas", solicitudesEnviadas);
-            
+
             // Solicitudes aprobadas
             int solicitudesAprobadas = comunidadDAO.contarSolicitudesAprobadas(usuario.getId());
             stats.put("solicitudesAprobadas", solicitudesAprobadas);
-            
+
             // Comunidades donde es admin
             int comunidadesAdmin = comunidadDAO.contarComunidadesAdmin(usuario.getId());
             stats.put("comunidadesAdmin", comunidadesAdmin);
-            
+
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("success", true);
             responseData.put("stats", stats);
-            
+
             enviarJSON(response, responseData);
-            
+
             System.out.println("📊 Estadísticas obtenidas para usuario: " + usuario.getId());
-            
+
         } catch (Exception e) {
             System.err.println("❌ Error al obtener estadísticas: " + e.getMessage());
             e.printStackTrace();
@@ -167,62 +171,62 @@ public class PerfilServlet extends HttpServlet {
      */
     private void actualizarInformacion(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        
+
         Usuario usuario = SessionUtil.getLoggedUser(request);
         if (usuario == null) {
             enviarErrorJSON(response, "Usuario no autenticado");
             return;
         }
-        
+
         String nombreCompleto = request.getParameter("nombreCompleto");
         String email = request.getParameter("email");
         String bio = request.getParameter("bio");
-        
+
         // Validaciones básicas
         if (nombreCompleto == null || nombreCompleto.trim().isEmpty()) {
             enviarErrorJSON(response, "El nombre completo es obligatorio");
             return;
         }
-        
+
         if (email == null || email.trim().isEmpty()) {
             enviarErrorJSON(response, "El email es obligatorio");
             return;
         }
-        
+
         if (!isValidEmail(email)) {
             enviarErrorJSON(response, "El formato del email no es válido");
             return;
         }
-        
+
         try {
             // Verificar si el email ya existe (excepto el del usuario actual)
             if (usuarioDAO.existeEmail(email.trim()) && !email.trim().equals(usuario.getEmail())) {
                 enviarErrorJSON(response, "Este email ya está en uso por otro usuario");
                 return;
             }
-            
+
             // Actualizar datos
             usuario.setNombreCompleto(nombreCompleto.trim());
             usuario.setEmail(email.trim());
-            
+
             boolean actualizado = usuarioDAO.actualizar(usuario);
-            
+
             if (actualizado) {
                 // Actualizar sesión
                 SessionUtil.updateUserSession(request, usuario);
-                
+
                 Map<String, Object> responseData = new HashMap<>();
                 responseData.put("success", true);
                 responseData.put("message", "Información actualizada exitosamente");
-                
+
                 enviarJSON(response, responseData);
-                
+
                 System.out.println("✅ Información actualizada para usuario: " + usuario.getId());
-                
+
             } else {
                 enviarErrorJSON(response, "Error al actualizar la información");
             }
-            
+
         } catch (Exception e) {
             System.err.println("❌ Error al actualizar información: " + e.getMessage());
             e.printStackTrace();
@@ -235,55 +239,55 @@ public class PerfilServlet extends HttpServlet {
      */
     private void cambiarPassword(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        
+
         Usuario usuario = SessionUtil.getLoggedUser(request);
         if (usuario == null) {
             enviarErrorJSON(response, "Usuario no autenticado");
             return;
         }
-        
+
         String passwordActual = request.getParameter("passwordActual");
         String passwordNueva = request.getParameter("passwordNueva");
-        
+
         // Validaciones
         if (passwordActual == null || passwordActual.trim().isEmpty()) {
             enviarErrorJSON(response, "La contraseña actual es obligatoria");
             return;
         }
-        
+
         if (passwordNueva == null || passwordNueva.trim().isEmpty()) {
             enviarErrorJSON(response, "La nueva contraseña es obligatoria");
             return;
         }
-        
+
         if (passwordNueva.length() < 8) {
             enviarErrorJSON(response, "La nueva contraseña debe tener al menos 8 caracteres");
             return;
         }
-        
+
         try {
             // Verificar contraseña actual
             if (!usuarioDAO.verificarPassword(usuario.getId(), passwordActual)) {
                 enviarErrorJSON(response, "La contraseña actual es incorrecta");
                 return;
             }
-            
+
             // Cambiar contraseña
             boolean cambiada = usuarioDAO.cambiarPassword(usuario.getId(), passwordNueva);
-            
+
             if (cambiada) {
                 Map<String, Object> responseData = new HashMap<>();
                 responseData.put("success", true);
                 responseData.put("message", "Contraseña cambiada exitosamente");
-                
+
                 enviarJSON(response, responseData);
-                
+
                 System.out.println("🔒 Contraseña cambiada para usuario: " + usuario.getId());
-                
+
             } else {
                 enviarErrorJSON(response, "Error al cambiar la contraseña");
             }
-            
+
         } catch (Exception e) {
             System.err.println("❌ Error al cambiar contraseña: " + e.getMessage());
             e.printStackTrace();
@@ -296,75 +300,75 @@ public class PerfilServlet extends HttpServlet {
      */
     private void cambiarAvatar(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
-        
+
         Usuario usuario = SessionUtil.getLoggedUser(request);
         if (usuario == null) {
             enviarErrorJSON(response, "Usuario no autenticado");
             return;
         }
-        
+
         try {
             // Obtener el archivo subido
             Part filePart = request.getPart("avatar");
-            
+
             if (filePart == null || filePart.getSize() == 0) {
                 enviarErrorJSON(response, "No se ha seleccionado ningún archivo");
                 return;
             }
-            
+
             String fileName = getFileName(filePart);
-            
+
             // Validar extensión
             if (!isValidImageFile(fileName)) {
                 enviarErrorJSON(response, "Formato de archivo no válido. Use JPG, JPEG o PNG");
                 return;
             }
-            
+
             // Validar tamaño (2MB máximo)
             if (filePart.getSize() > 2 * 1024 * 1024) {
                 enviarErrorJSON(response, "El archivo es demasiado grande. Máximo 2MB");
                 return;
             }
-            
+
             // Generar nombre único
             String extension = fileName.substring(fileName.lastIndexOf("."));
             String uniqueFileName = "avatar_" + usuario.getId() + "_" + System.currentTimeMillis() + extension;
-            
+
             // Crear directorio si no existe
             String uploadPath = getServletContext().getRealPath("") + UPLOAD_DIR;
             Path uploadDir = Paths.get(uploadPath);
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
-            
+
             // Guardar archivo
             Path filePath = uploadDir.resolve(uniqueFileName);
             Files.copy(filePart.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-            
+
             // Actualizar URL en base de datos
             String avatarUrl = UPLOAD_DIR + uniqueFileName;
             boolean actualizado = usuarioDAO.actualizarAvatar(usuario.getId(), avatarUrl);
-            
+
             if (actualizado) {
                 // Actualizar objeto usuario y sesión
                 usuario.setAvatar(avatarUrl);
                 SessionUtil.updateUserSession(request, usuario);
-                
+
                 Map<String, Object> responseData = new HashMap<>();
                 responseData.put("success", true);
                 responseData.put("message", "Avatar actualizado exitosamente");
                 responseData.put("avatarUrl", avatarUrl);
-                
+
                 enviarJSON(response, responseData);
-                
+
                 System.out.println("🖼️ Avatar actualizado para usuario: " + usuario.getId());
-                
+
             } else {
                 // Eliminar archivo si falló la actualización en BD
                 Files.deleteIfExists(filePath);
                 enviarErrorJSON(response, "Error al actualizar el avatar en la base de datos");
             }
-            
+
         } catch (Exception e) {
             System.err.println("❌ Error al cambiar avatar: " + e.getMessage());
             e.printStackTrace();
@@ -372,15 +376,155 @@ public class PerfilServlet extends HttpServlet {
         }
     }
 
-    // ============= MÉTODOS AUXILIARES =============
+    // ============= SOLICITUD VERIFICACION =========
+    private void procesarSolicitudVerificacion(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        Usuario usuario = SessionUtil.getLoggedUser(request);
+        if (usuario == null) {
+            enviarErrorJSON(response, "Usuario no autenticado");
+            return;
+        }
 
+        // Verificar que no esté ya verificado
+        if (usuario.isVerificado()) {
+            enviarErrorJSON(response, "Tu cuenta ya está verificada");
+            return;
+        }
+
+        // Verificar que no tenga una solicitud pendiente
+        if (usuario.isSolicitoVerificacion()) {
+            enviarErrorJSON(response, "Ya tienes una solicitud de verificación pendiente");
+            return;
+        }
+
+        String password = request.getParameter("password");
+        String motivo = request.getParameter("motivo");
+        String categoria = request.getParameter("categoria");
+        String enlaces = request.getParameter("enlaces");
+
+        // Validaciones básicas
+        if (password == null || password.trim().isEmpty()) {
+            enviarErrorJSON(response, "La contraseña actual es obligatoria");
+            return;
+        }
+
+        if (motivo == null || motivo.trim().isEmpty()) {
+            enviarErrorJSON(response, "El motivo de la solicitud es obligatorio");
+            return;
+        }
+
+        if (motivo.length() < 50) {
+            enviarErrorJSON(response, "El motivo debe tener al menos 50 caracteres");
+            return;
+        }
+
+        if (motivo.length() > 500) {
+            enviarErrorJSON(response, "El motivo no puede exceder 500 caracteres");
+            return;
+        }
+
+        if (categoria == null || categoria.trim().isEmpty()) {
+            enviarErrorJSON(response, "Debes seleccionar una categoría");
+            return;
+        }
+
+        try {
+            // Verificar contraseña actual
+            if (!usuarioDAO.verificarPassword(usuario.getId(), password)) {
+                enviarErrorJSON(response, "La contraseña actual es incorrecta");
+                return;
+            }
+
+            // Obtener archivo de documento
+            Part documentoPart = request.getPart("documento");
+            if (documentoPart == null || documentoPart.getSize() == 0) {
+                enviarErrorJSON(response, "El documento de identificación es obligatorio");
+                return;
+            }
+
+            String fileName = getFileName(documentoPart);
+
+            // Validar tipo de archivo
+            if (!isValidImageFile(fileName)) {
+                enviarErrorJSON(response, "Formato de archivo no válido. Use JPG, PNG o PDF");
+                return;
+            }
+
+            // Validar tamaño (5MB máximo)
+            if (documentoPart.getSize() > 5 * 1024 * 1024) {
+                enviarErrorJSON(response, "El archivo es demasiado grande. Máximo 5MB");
+                return;
+            }
+
+            // Generar nombre único para el documento
+            String extension = fileName.substring(fileName.lastIndexOf("."));
+            String uniqueFileName = "verificacion_" + usuario.getId() + "_" + System.currentTimeMillis() + extension;
+
+            // Crear directorio si no existe
+            String uploadPath = getServletContext().getRealPath("") + VERIFICATION_UPLOAD_DIR;
+            Path uploadDir = Paths.get(uploadPath);
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            // Guardar archivo
+            Path filePath = uploadDir.resolve(uniqueFileName);
+            Files.copy(documentoPart.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            String documentoUrl = VERIFICATION_UPLOAD_DIR + uniqueFileName;
+
+            // Crear solicitud de verificación en la base de datos
+            boolean solicitudCreada = usuarioDAO.crearSolicitudVerificacion(
+                usuario.getId(),
+                motivo.trim(),
+                categoria.trim(),
+                documentoUrl,
+                enlaces != null ? enlaces.trim() : null
+            );
+
+            if (solicitudCreada) {
+                // Marcar usuario como que solicitó verificación
+                boolean usuarioActualizado = usuarioDAO.marcarSolicitudVerificacion(usuario.getId());
+
+                if (usuarioActualizado) {
+                    // Actualizar sesión
+                    usuario.setSolicitoVerificacion(true);
+                    SessionUtil.updateUserSession(request, usuario);
+
+                    Map<String, Object> responseData = new HashMap<>();
+                    responseData.put("success", true);
+                    responseData.put("message", "Solicitud de verificación enviada exitosamente. " +
+                                              "Nuestro equipo la revisará en un plazo de 3-5 días hábiles.");
+
+                    enviarJSON(response, responseData);
+
+                    System.out.println("✅ Solicitud de verificación creada para usuario: " + usuario.getId());
+
+                } else {
+                    // Eliminar archivo si falló la actualización del usuario
+                    Files.deleteIfExists(filePath);
+                    enviarErrorJSON(response, "Error al procesar la solicitud");
+                }
+            } else {
+                // Eliminar archivo si falló la creación de la solicitud
+                Files.deleteIfExists(filePath);
+                enviarErrorJSON(response, "Error al crear la solicitud de verificación");
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al procesar solicitud de verificación: " + e.getMessage());
+            e.printStackTrace();
+            enviarErrorJSON(response, "Error interno al procesar la solicitud");
+        }
+    }
+    // ============= MÉTODOS AUXILIARES =============
     /**
      * Obtener nombre del archivo de un Part
      */
     private String getFileName(Part part) {
         String contentDisposition = part.getHeader("content-disposition");
         String[] tokens = contentDisposition.split(";");
-        
+
         for (String token : tokens) {
             if (token.trim().startsWith("filename")) {
                 return token.substring(token.indexOf("=") + 2, token.length() - 1);
@@ -396,7 +540,7 @@ public class PerfilServlet extends HttpServlet {
         if (fileName == null || fileName.trim().isEmpty()) {
             return false;
         }
-        
+
         String lowerFileName = fileName.toLowerCase();
         for (String ext : ALLOWED_EXTENSIONS) {
             if (lowerFileName.endsWith(ext)) {
@@ -413,7 +557,7 @@ public class PerfilServlet extends HttpServlet {
         if (email == null || email.trim().isEmpty()) {
             return false;
         }
-        
+
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
         return email.matches(emailRegex);
     }
@@ -424,7 +568,7 @@ public class PerfilServlet extends HttpServlet {
     private void enviarJSON(HttpServletResponse response, Object data) throws IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        
+
         try (PrintWriter out = response.getWriter()) {
             out.write(gson.toJson(data));
         }
@@ -437,10 +581,10 @@ public class PerfilServlet extends HttpServlet {
         Map<String, Object> errorData = new HashMap<>();
         errorData.put("success", false);
         errorData.put("message", message);
-        
+
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        
+
         try (PrintWriter out = response.getWriter()) {
             out.write(gson.toJson(errorData));
         }
