@@ -17,17 +17,14 @@ public class SolicitudMembresia {
     private Integer idAdminRespuesta;
     private String mensajeRespuesta;
     
-    // Datos del usuario solicitante (para JOIN)
     private String usernameUsuario;
     private String nombreCompletoUsuario;
     private String avatarUsuario;
     private String emailUsuario;
     
-    // Datos del admin que responde (para JOIN)
     private String usernameAdmin;
     private String nombreCompletoAdmin;
     
-    // Datos de la comunidad (para JOIN)
     private String nombreComunidad;
     private String usernameComunidad;
     

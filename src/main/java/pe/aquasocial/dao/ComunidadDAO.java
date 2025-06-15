@@ -733,9 +733,12 @@ public class ComunidadDAO implements IComunidadDAO {
      */
     public List<SolicitudMembresia> obtenerSolicitudesPendientes(int idComunidad) {
         List<SolicitudMembresia> solicitudes = new ArrayList<>();
-        String sql = "SELECT s.*, u.username, u.nombre_completo, u.avatar, u.email "
+        String sql = "SELECT s.*, "
+                + "u.username as username_usuario, u.nombre_completo as nombre_usuario, u.avatar as avatar_usuario, u.email as email_usuario, "
+                + "a.username as username_admin, a.nombre_completo as nombre_admin "
                 + "FROM comunidad_solicitudes s "
                 + "JOIN usuarios u ON s.id_usuario = u.id "
+                + "LEFT JOIN usuarios a ON s.id_admin_respuesta = a.id "
                 + "WHERE s.id_comunidad = ? AND s.estado = 'pendiente' "
                 + "ORDER BY s.fecha_solicitud ASC";
 
@@ -745,7 +748,7 @@ public class ComunidadDAO implements IComunidadDAO {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                SolicitudMembresia solicitud = mapearSolicitudMembresia(rs);
+                SolicitudMembresia solicitud = mapearSolicitudConAdmin(rs);
                 solicitudes.add(solicitud);
             }
 
@@ -799,10 +802,12 @@ public class ComunidadDAO implements IComunidadDAO {
         List<SolicitudMembresia> solicitudes = new ArrayList<>();
         String sql = "SELECT s.*, "
                 + "u.username as username_usuario, u.nombre_completo as nombre_usuario, u.avatar as avatar_usuario, u.email as email_usuario, "
-                + "a.username as username_admin, a.nombre_completo as nombre_admin "
+                + "a.username as username_admin, a.nombre_completo as nombre_admin, "
+                + "c.nombre as nombre_comunidad, c.comunidad_username as username_comunidad "
                 + "FROM comunidad_solicitudes s "
                 + "JOIN usuarios u ON s.id_usuario = u.id "
                 + "LEFT JOIN usuarios a ON s.id_admin_respuesta = a.id "
+                + "JOIN comunidades c ON s.id_comunidad = c.id_comunidad "
                 + "WHERE s.id_comunidad = ? "
                 + "ORDER BY s.fecha_solicitud DESC";
 
@@ -812,12 +817,14 @@ public class ComunidadDAO implements IComunidadDAO {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                SolicitudMembresia solicitud = mapearSolicitudConAdmin(rs);
+                SolicitudMembresia solicitud = mapearSolicitudMembresiaCompleta(rs);
                 solicitudes.add(solicitud);
             }
 
+            System.out.println("✅ Obtenidas " + solicitudes.size() + " solicitudes totales para comunidad " + idComunidad);
+
         } catch (SQLException e) {
-            System.err.println("❌ Error al obtener solicitudes: " + e.getMessage());
+            System.err.println("❌ Error al obtener todas las solicitudes: " + e.getMessage());
             e.printStackTrace();
         }
 

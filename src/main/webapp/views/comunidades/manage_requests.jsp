@@ -499,6 +499,147 @@
             color: white;
             border-color: #007bff;
         }
+
+        /* ===== ESTILOS DEL MODAL ===== */
+        .detail-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .detail-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-detail-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .user-avatar-large {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .user-detail-info h5 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        
+        .user-detail-info p {
+            margin: 0 0 10px 0;
+        }
+        
+        .message-detail-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+        }
+        
+        .message-meta {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e9ecef;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -25px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px #e9ecef;
+        }
+        
+        .timeline-content h6 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .timeline-content p {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-actions .btn {
+            font-size: 12px;
+        }
+        
+        /* Toast notifications */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            overflow: hidden;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
         
         @media (max-width: 768px) {
             .main-container {
@@ -717,7 +858,8 @@
                                         <tr class="request-row" 
                                             data-status="<%= solicitud.getEstado() %>"
                                             data-user="<%= solicitud.getUsernameUsuario() != null ? solicitud.getUsernameUsuario().toLowerCase() : "" %>"
-                                            data-date="<%= solicitud.getFechaSolicitud() != null ? solicitud.getFechaSolicitud().toString() : "" %>">
+                                            data-date="<%= solicitud.getFechaSolicitud() != null ? solicitud.getFechaSolicitud().toString() : "" %>"
+                                            data-id="<%= solicitud.getIdSolicitud() %>">
                                             
                                             <!-- Usuario -->
                                             <td class="user-cell">
@@ -830,6 +972,35 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal de Detalles -->
+    <div class="modal fade" id="detallesModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <!-- Header -->
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye"></i> Detalles de Solicitud
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" style="opacity: 0.8;">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                
+                <!-- Body -->
+                <div class="modal-body" id="modalBody">
+                    <!-- El contenido se carga dinámicamente -->
+                </div>
+                
+                <!-- Footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Scripts -->
     <jsp:include page="/components/js_imports.jsp" />
@@ -915,7 +1086,6 @@
                 }
             });
             
-            // Actualizar contador en pestañas activas
             console.log('Mostrando ' + visibleCount + ' solicitudes');
         }
         
@@ -935,10 +1105,7 @@
         function verDetallesSolicitud(idSolicitud) {
             console.log('👁️ Cargando detalles de solicitud:', idSolicitud);
             
-            // Buscar los datos de la solicitud en la tabla
-            var $row = $('.request-row').filter(function() {
-                return $(this).find('[onclick*="' + idSolicitud + '"]').length > 0;
-            });
+            var $row = $('.request-row[data-id="' + idSolicitud + '"]');
             
             if ($row.length === 0) {
                 showError('No se encontraron los datos de la solicitud');
@@ -949,80 +1116,67 @@
             var userData = $row.find('.user-info h6').text();
             var userEmail = $row.find('.user-info .username').text();
             var userAvatar = $row.find('.user-avatar').text();
-            var status = $row.find('.status-badge').text().trim();
+            var status = $row.find('.status-badge').text().trim().toUpperCase();
             var statusClass = $row.find('.status-badge').attr('class').split(' ').find(function(c) { 
                 return c.indexOf('status-') === 0; 
             });
-            var message = $row.find('.message-text').text() || 'Sin mensaje';
+
+            var message = $row.find('.message-text').text().trim() || 'Sin mensaje';
             var requestDate = $row.find('.date-cell').first().text().replace(/\s+/g, ' ').trim();
             var adminName = $row.find('.admin-name').text() || null;
             var adminUsername = $row.find('.admin-username').text() || null;
             var responseDate = $row.find('.date-cell').last().text().replace(/\s+/g, ' ').trim();
             var hasResponse = adminName && adminName !== '-';
             
-            // Construir el modal
-            var modalHtml = '<div class="modal fade" id="detallesModal" tabindex="-1" role="dialog" aria-hidden="true">' +
-                '<div class="modal-dialog modal-lg modal-dialog-centered" role="document">' +
-                    '<div class="modal-content">' +
-                        '<!-- Header -->' +
-                        '<div class="modal-header bg-info text-white">' +
-                            '<h5 class="modal-title">' +
-                                '<i class="fas fa-eye"></i> Detalles de Solicitud' +
-                            '</h5>' +
-                            '<button type="button" class="close text-white" data-dismiss="modal" style="opacity: 0.8;">' +
-                                '<span>&times;</span>' +
-                            '</button>' +
+            // Construir el contenido del modal
+            var modalContent = 
+                '<!-- Info del Usuario -->' +
+                '<div class="detail-section">' +
+                    '<h6 class="section-title">' +
+                        '<i class="fas fa-user"></i> Información del Solicitante' +
+                    '</h6>' +
+                    '<div class="user-detail-card">' +
+                        '<div class="user-avatar-large">' + userAvatar + '</div>' +
+                        '<div class="user-detail-info">' +
+                            '<h5>' + userData + '</h5>' +
+                            '<p class="text-muted">' + userEmail + '</p>' +
+                            '<span class="status-badge ' + statusClass + '">' + status + '</span>' +
                         '</div>' +
-                        
-                        '<!-- Body -->' +
-                        '<div class="modal-body">' +
-                            '<!-- Info del Usuario -->' +
-                            '<div class="detail-section">' +
-                                '<h6 class="section-title">' +
-                                    '<i class="fas fa-user"></i> Información del Solicitante' +
-                                '</h6>' +
-                                '<div class="user-detail-card">' +
-                                    '<div class="user-avatar-large">' + userAvatar + '</div>' +
-                                    '<div class="user-detail-info">' +
-                                        '<h5>' + userData + '</h5>' +
-                                        '<p class="text-muted">' + userEmail + '</p>' +
-                                        '<span class="status-badge ' + statusClass + '">' + status + '</span>' +
-                                    '</div>' +
-                                '</div>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<!-- Mensaje de Solicitud -->' +
+                '<div class="detail-section">' +
+                    '<h6 class="section-title">' +
+                        '<i class="fas fa-comment"></i> Mensaje de Solicitud' +
+                    '</h6>' +
+                    '<div class="message-detail-card">' +
+                        '<div class="message-content">' + message + '</div>' +
+                        '<div class="message-meta">' +
+                            '<i class="fas fa-calendar"></i> ' + requestDate +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                
+                '<!-- Timeline -->' +
+                '<div class="detail-section">' +
+                    '<h6 class="section-title">' +
+                        '<i class="fas fa-clock"></i> Cronología' +
+                    '</h6>' +
+                    '<div class="timeline">' +
+                        '<div class="timeline-item">' +
+                            '<div class="timeline-marker bg-primary"></div>' +
+                            '<div class="timeline-content">' +
+                                '<h6>Solicitud Enviada</h6>' +
+                                '<p>' + requestDate + '</p>' +
+                                '<small class="text-muted">El usuario envió su solicitud de membresía</small>' +
                             '</div>' +
-                            
-                            '<!-- Mensaje de Solicitud -->' +
-                            '<div class="detail-section">' +
-                                '<h6 class="section-title">' +
-                                    '<i class="fas fa-comment"></i> Mensaje de Solicitud' +
-                                '</h6>' +
-                                '<div class="message-detail-card">' +
-                                    '<div class="message-content">' + message + '</div>' +
-                                    '<div class="message-meta">' +
-                                        '<i class="fas fa-calendar"></i> ' + requestDate +
-                                    '</div>' +
-                                '</div>' +
-                            '</div>' +
-                            
-                            '<!-- Timeline -->' +
-                            '<div class="detail-section">' +
-                                '<h6 class="section-title">' +
-                                    '<i class="fas fa-clock"></i> Cronología' +
-                                '</h6>' +
-                                '<div class="timeline">' +
-                                    '<div class="timeline-item">' +
-                                        '<div class="timeline-marker bg-primary"></div>' +
-                                        '<div class="timeline-content">' +
-                                            '<h6>Solicitud Enviada</h6>' +
-                                            '<p>' + requestDate + '</p>' +
-                                            '<small class="text-muted">El usuario envió su solicitud de membresía</small>' +
-                                        '</div>' +
-                                    '</div>';
-            
+                        '</div>';
+
             // Agregar timeline de respuesta
             if (hasResponse) {
                 var markerClass = status === 'APROBADA' ? 'bg-success' : 'bg-danger';
-                modalHtml += '<div class="timeline-item">' +
+                modalContent += '<div class="timeline-item">' +
                                 '<div class="timeline-marker ' + markerClass + '"></div>' +
                                 '<div class="timeline-content">' +
                                     '<h6>Solicitud ' + status + '</h6>' +
@@ -1031,7 +1185,7 @@
                                 '</div>' +
                             '</div>';
             } else {
-                modalHtml += '<div class="timeline-item">' +
+                modalContent += '<div class="timeline-item">' +
                                 '<div class="timeline-marker bg-warning"></div>' +
                                 '<div class="timeline-content">' +
                                     '<h6>Pendiente de Revisión</h6>' +
@@ -1040,7 +1194,7 @@
                             '</div>';
             }
             
-            modalHtml += '</div>' +
+            modalContent += '</div>' +
                         '</div>' +
                         
                         '<!-- Acciones Rápidas -->' +
@@ -1058,182 +1212,29 @@
             
             // Agregar botones de aprobación si está pendiente
             if (status === 'PENDIENTE') {
-                modalHtml += '<button class="btn btn-success btn-sm" onclick="aprobarDesdeDetalle(' + idSolicitud + ')">' +
-                                '<i class="fas fa-check"></i> Aprobar' +
-                            '</button>' +
-                            '<button class="btn btn-danger btn-sm" onclick="rechazarDesdeDetalle(' + idSolicitud + ')">' +
-                                '<i class="fas fa-times"></i> Rechazar' +
-                            '</button>';
+                modalContent += '<button class="btn btn-success btn-sm" onclick="aprobarDesdeDetalle(' + idSolicitud + ')">' +
+                                    '<i class="fas fa-check"></i> Aprobar' +
+                                '</button>' +
+                                '<button class="btn btn-danger btn-sm" onclick="rechazarDesdeDetalle(' + idSolicitud + ')">' +
+                                    '<i class="fas fa-times"></i> Rechazar' +
+                                '</button>';
             }
             
-            modalHtml += '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    
-                    '<!-- Footer -->' +
-                    '<div class="modal-footer">' +
-                        '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
-                            '<i class="fas fa-times"></i> Cerrar' +
-                        '</button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
+            modalContent += '</div>' +
+                        '</div>';
             
-            // Agregar estilos CSS
-            var modalStyles = '<style>' +
-                '.detail-section {' +
-                    'margin-bottom: 25px;' +
-                    'padding-bottom: 20px;' +
-                    'border-bottom: 1px solid #f1f3f4;' +
-                '}' +
-                
-                '.detail-section:last-child {' +
-                    'border-bottom: none;' +
-                    'margin-bottom: 0;' +
-                '}' +
-                
-                '.section-title {' +
-                    'color: #495057;' +
-                    'font-weight: 600;' +
-                    'margin-bottom: 15px;' +
-                    'display: flex;' +
-                    'align-items: center;' +
-                    'gap: 8px;' +
-                '}' +
-                
-                '.user-detail-card {' +
-                    'display: flex;' +
-                    'align-items: center;' +
-                    'gap: 20px;' +
-                    'padding: 20px;' +
-                    'background: #f8f9fa;' +
-                    'border-radius: 10px;' +
-                '}' +
-                
-                '.user-avatar-large {' +
-                    'width: 60px;' +
-                    'height: 60px;' +
-                    'border-radius: 50%;' +
-                    'background: linear-gradient(135deg, #007bff, #6610f2);' +
-                    'display: flex;' +
-                    'align-items: center;' +
-                    'justify-content: center;' +
-                    'color: white;' +
-                    'font-weight: 700;' +
-                    'font-size: 1.5rem;' +
-                    'flex-shrink: 0;' +
-                '}' +
-                
-                '.user-detail-info h5 {' +
-                    'margin: 0 0 5px 0;' +
-                    'color: #333;' +
-                '}' +
-                
-                '.user-detail-info p {' +
-                    'margin: 0 0 10px 0;' +
-                '}' +
-                
-                '.message-detail-card {' +
-                    'background: #f8f9fa;' +
-                    'border-radius: 10px;' +
-                    'padding: 20px;' +
-                    'border-left: 4px solid #007bff;' +
-                '}' +
-                
-                '.message-content {' +
-                    'font-size: 14px;' +
-                    'line-height: 1.6;' +
-                    'color: #333;' +
-                    'margin-bottom: 10px;' +
-                    'white-space: pre-wrap;' +
-                '}' +
-                
-                '.message-meta {' +
-                    'font-size: 12px;' +
-                    'color: #6c757d;' +
-                '}' +
-                
-                '.timeline {' +
-                    'position: relative;' +
-                    'padding-left: 30px;' +
-                '}' +
-                
-                '.timeline::before {' +
-                    'content: "";' +
-                    'position: absolute;' +
-                    'left: 10px;' +
-                    'top: 0;' +
-                    'bottom: 0;' +
-                    'width: 2px;' +
-                    'background: #e9ecef;' +
-                '}' +
-                
-                '.timeline-item {' +
-                    'position: relative;' +
-                    'margin-bottom: 20px;' +
-                '}' +
-                
-                '.timeline-marker {' +
-                    'position: absolute;' +
-                    'left: -25px;' +
-                    'top: 5px;' +
-                    'width: 12px;' +
-                    'height: 12px;' +
-                    'border-radius: 50%;' +
-                    'border: 2px solid white;' +
-                    'box-shadow: 0 0 0 2px #e9ecef;' +
-                '}' +
-                
-                '.timeline-content h6 {' +
-                    'margin: 0 0 5px 0;' +
-                    'font-weight: 600;' +
-                    'color: #333;' +
-                '}' +
-                
-                '.timeline-content p {' +
-                    'margin: 0 0 5px 0;' +
-                    'font-size: 14px;' +
-                    'color: #495057;' +
-                '}' +
-                
-                '.quick-actions {' +
-                    'display: flex;' +
-                    'gap: 10px;' +
-                    'flex-wrap: wrap;' +
-                '}' +
-                
-                '.quick-actions .btn {' +
-                    'font-size: 12px;' +
-                '}' +
-            '</style>';
-            
-            // Remover modal anterior si existe
-            $('#detallesModal').remove();
-            
-            // Agregar estilos y modal al DOM
-            if ($('#modal-details-styles').length === 0) {
-                $('head').append('<div id="modal-details-styles">' + modalStyles + '</div>');
-            }
-            
-            $('body').append(modalHtml);
+            // Cargar contenido en el modal y mostrarlo
+            $('#modalBody').html(modalContent);
             $('#detallesModal').modal('show');
-            
-            // Cleanup al cerrar
-            $('#detallesModal').on('hidden.bs.modal', function() {
-                $(this).remove();
-            });
         }
         
         function copiarDetalles(idSolicitud) {
-            var $row = $('.request-row').filter(function() {
-                return $(this).find('[onclick*="' + idSolicitud + '"]').length > 0;
-            });
+            var $row = $('.request-row[data-id="' + idSolicitud + '"]');
             
             var userData = $row.find('.user-info h6').text();
             var userEmail = $row.find('.user-info .username').text();
             var status = $row.find('.status-badge').text().trim();
-            var message = $row.find('.message-text').text() || 'Sin mensaje';
+            var message = $row.find('.message-text').text().trim() || 'Sin mensaje';
             var requestDate = $row.find('.date-cell').first().text().replace(/\s+/g, ' ').trim();
             
             var detalles = 'Solicitud de Membresía - ID: ' + idSolicitud + '\n' +
@@ -1268,22 +1269,127 @@
         
         function aprobarDesdeDetalle(idSolicitud) {
             $('#detallesModal').modal('hide');
-            // Buscar el username desde la tabla para la función existente
-            var $row = $('.request-row').filter(function() {
-                return $(this).find('[onclick*="' + idSolicitud + '"]').length > 0;
-            });
-            var username = $row.find('.user-info .username').text().replace('@', '');
-            aprobarSolicitud(idSolicitud, username);
+            
+            // Mostrar modal de confirmación para aprobación
+            mostrarModalRespuesta(idSolicitud, 'aprobar', 
+                '¿Confirmas que quieres aprobar esta solicitud?',
+                'El usuario será agregado automáticamente a la comunidad.',
+                'success'
+            );
         }
         
         function rechazarDesdeDetalle(idSolicitud) {
             $('#detallesModal').modal('hide');
-            // Buscar el username desde la tabla para la función existente
-            var $row = $('.request-row').filter(function() {
-                return $(this).find('[onclick*="' + idSolicitud + '"]').length > 0;
+            
+            // Mostrar modal de confirmación para rechazo
+            mostrarModalRespuesta(idSolicitud, 'rechazar',
+                '¿Estás seguro de rechazar esta solicitud?',
+                'Puedes incluir un mensaje explicando el motivo del rechazo.',
+                'danger'
+            );
+        }
+        
+        function mostrarModalRespuesta(idSolicitud, accion, titulo, descripcion, tipo) {
+            var iconClass = accion === 'aprobar' ? 'fa-check' : 'fa-times';
+            var btnClass = accion === 'aprobar' ? 'btn-success' : 'btn-danger';
+            var btnText = accion === 'aprobar' ? 'Aprobar Solicitud' : 'Rechazar Solicitud';
+            
+            var modalHtml = 
+                '<div class="modal fade" id="responderModalHistorial" tabindex="-1" role="dialog">' +
+                    '<div class="modal-dialog modal-dialog-centered" role="document">' +
+                        '<div class="modal-content">' +
+                            '<div class="modal-header bg-' + tipo + ' text-white">' +
+                                '<h5 class="modal-title">' +
+                                    '<i class="fas ' + iconClass + '"></i> ' + titulo +
+                                '</h5>' +
+                                '<button type="button" class="close text-white" data-dismiss="modal">' +
+                                    '<span>&times;</span>' +
+                                '</button>' +
+                            '</div>' +
+                            '<div class="modal-body">' +
+                                '<p class="mb-3">' + descripcion + '</p>' +
+                                '<div class="form-group">' +
+                                    '<label for="mensajeRespuestaHistorial">Mensaje de respuesta (opcional):</label>' +
+                                    '<textarea class="form-control" id="mensajeRespuestaHistorial" rows="3" ' +
+                                        'placeholder="Escribe un mensaje para el solicitante..."></textarea>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="modal-footer">' +
+                                '<button type="button" class="btn btn-secondary" data-dismiss="modal">' +
+                                    '<i class="fas fa-times"></i> Cancelar' +
+                                '</button>' +
+                                '<button type="button" class="btn ' + btnClass + '" id="btnConfirmarRespuestaHistorial" ' +
+                                        'onclick="procesarRespuestaHistorial(' + idSolicitud + ', \'' + accion + '\')">' +
+                                    '<i class="fas ' + iconClass + '"></i> ' + btnText +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            
+            // Remover modal anterior si existe
+            $('#responderModalHistorial').remove();
+            
+            // Agregar nuevo modal
+            $('body').append(modalHtml);
+            $('#responderModalHistorial').modal('show');
+            
+            // Cleanup al cerrar
+            $('#responderModalHistorial').on('hidden.bs.modal', function() {
+                $(this).remove();
             });
-            var username = $row.find('.user-info .username').text().replace('@', '');
-            rechazarSolicitud(idSolicitud, username);
+        }
+        
+        function procesarRespuestaHistorial(idSolicitud, accion) {
+            var mensaje = $('#mensajeRespuestaHistorial').val().trim();
+            
+            console.log('🔄 Procesando respuesta desde historial:', { idSolicitud, accion, mensaje: mensaje.substring(0, 50) + '...' });
+            
+            // Deshabilitar botón
+            $('#btnConfirmarRespuestaHistorial').prop('disabled', true)
+                                              .html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+            
+            $.ajax({
+                url: 'ComunidadServlet',
+                type: 'POST',
+                data: {
+                    action: 'respondRequest',
+                    idSolicitud: idSolicitud,
+                    accion: accion,
+                    mensajeRespuesta: mensaje
+                },
+                dataType: 'json',
+                success: function(response) {
+                    $('#btnConfirmarRespuestaHistorial').prop('disabled', false);
+                    
+                    if (response.success) {
+                        $('#responderModalHistorial').modal('hide');
+                        showSuccess(response.message);
+                        
+                        // Recargar página para mostrar cambios
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                        
+                    } else {
+                        showError(response.message);
+                        $('#btnConfirmarRespuestaHistorial').html(
+                            accion === 'aprobar' ? 
+                            '<i class="fas fa-check"></i> Aprobar Solicitud' : 
+                            '<i class="fas fa-times"></i> Rechazar Solicitud'
+                        );
+                    }
+                },
+                error: function() {
+                    $('#btnConfirmarRespuestaHistorial').prop('disabled', false)
+                                                      .html(
+                                                          accion === 'aprobar' ? 
+                                                          '<i class="fas fa-check"></i> Aprobar Solicitud' : 
+                                                          '<i class="fas fa-times"></i> Rechazar Solicitud'
+                                                      );
+                    showError('Error de conexión al procesar la respuesta');
+                }
+            });
         }
         
         function exportarCSV() {

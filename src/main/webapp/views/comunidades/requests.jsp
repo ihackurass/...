@@ -595,15 +595,7 @@
                                                 </a>
                                             <% } %>
                                         </div>
-                                    <% } else { %>
-                                        <!-- Solicitud ya procesada -->
-                                        <div class="request-actions">
-                                            <button class="btn-action btn-view" 
-                                                    onclick="verDetallesSolicitud(<%= solicitud.getIdSolicitud() %>)">
-                                                <i class="fas fa-eye"></i> Ver Detalles
-                                            </button>
-                                        </div>
-                                    <% } %>
+                                    <% }  %>
                                 </div>
                             <% } %>
                         </div>
@@ -797,12 +789,7 @@
                 }
             });
         }
-        
-        function verDetallesSolicitud(idSolicitud) {
-            // TODO: Implementar vista de detalles completos
-            console.log('👁️ Ver detalles de solicitud:', idSolicitud);
-            showInfo('Funcionalidad de detalles en desarrollo');
-        }
+       
         
         // Sistema de notificaciones (reutilizable)
         function showNotification(message, type, duration) {
