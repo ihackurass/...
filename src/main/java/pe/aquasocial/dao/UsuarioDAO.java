@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.mindrot.jbcrypt.BCrypt;
+import pe.aquasocial.entity.Comunidad;
 
 import pe.aquasocial.entity.Usuario;
 import pe.aquasocial.util.Conexion;
@@ -26,10 +27,12 @@ import pe.aquasocial.util.Conexion;
  * @author Rodrigo
  */
 public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
-    private static final String EMAIL_PATTERN = 
-        "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
-    
+
+    private static final String EMAIL_PATTERN
+            = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+
     private static final Pattern EMAIL_REGEX = Pattern.compile(EMAIL_PATTERN);
+
     @Override
     public int insertar(Usuario usuario) throws SQLException {
         String sql = "INSERT INTO usuarios (username,nombre_completo, email, password, rol, verificado, privilegio, baneado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -234,212 +237,202 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
 
         return false; // Por defecto, no baneado si hay error
     }
+
     @Override
     public boolean actualizarInformacion(Usuario usuario) {
         String sql = "UPDATE usuarios SET nombre_completo = ?, email = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, usuario.getNombreCompleto().trim());
             stmt.setString(2, usuario.getEmail().trim().toLowerCase());
             stmt.setInt(3, usuario.getId());
-            
+
             boolean actualizado = stmt.executeUpdate() > 0;
-            
+
             if (actualizado) {
                 System.out.println("✅ Información actualizada para usuario ID: " + usuario.getId());
             }
-            
+
             return actualizado;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al actualizar información: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public boolean existeEmail(String email) {
         String sql = "SELECT COUNT(*) FROM usuarios WHERE LOWER(email) = LOWER(?)";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, email.trim());
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al verificar email: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return false;
     }
-    
+
     @Override
     public boolean existeEmailOtroUsuario(String email, int idUsuarioExcluir) {
         String sql = "SELECT COUNT(*) FROM usuarios WHERE LOWER(email) = LOWER(?) AND id != ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, email.trim());
             stmt.setInt(2, idUsuarioExcluir);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al verificar email de otro usuario: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return false;
     }
-    
+
     // ============= GESTIÓN DE CONTRASEÑAS =============
-    
     @Override
     public boolean verificarPassword(int idUsuario, String passwordActual) {
         String sql = "SELECT password FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 String hashedPassword = rs.getString("password");
                 return BCrypt.checkpw(passwordActual, hashedPassword);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al verificar password: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return false;
     }
-    
+
     @Override
     public boolean cambiarPassword(int idUsuario, String nuevaPassword) {
         String sql = "UPDATE usuarios SET password = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             // Encriptar nueva contraseña
             String hashedPassword = BCrypt.hashpw(nuevaPassword, BCrypt.gensalt(12));
-            
+
             stmt.setString(1, hashedPassword);
             stmt.setInt(2, idUsuario);
-            
+
             boolean cambiado = stmt.executeUpdate() > 0;
-            
+
             if (cambiado) {
                 System.out.println("🔒 Contraseña cambiada para usuario ID: " + idUsuario);
             }
-            
+
             return cambiado;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al cambiar password: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public String obtenerHashPassword(int idUsuario) {
         String sql = "SELECT password FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getString("password");
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al obtener hash password: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return null;
     }
-    
+
     // ============= GESTIÓN DE AVATARES =============
-    
     @Override
     public boolean actualizarAvatar(int idUsuario, String avatarUrl) {
         String sql = "UPDATE usuarios SET avatar = ?, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, avatarUrl);
             stmt.setInt(2, idUsuario);
-            
+
             boolean actualizado = stmt.executeUpdate() > 0;
-            
+
             if (actualizado) {
                 System.out.println("🖼️ Avatar actualizado para usuario ID: " + idUsuario);
             }
-            
+
             return actualizado;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al actualizar avatar: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public String obtenerAvatarActual(int idUsuario) {
         String sql = "SELECT avatar FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getString("avatar");
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al obtener avatar actual: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return null;
     }
-    
+
     @Override
     public boolean eliminarAvatar(int idUsuario) {
         return actualizarAvatar(idUsuario, null);
     }
-    
+
     // ============= ESTADÍSTICAS DEL USUARIO =============
-    
     @Override
     public Map<String, Integer> obtenerEstadisticasCompletas(int idUsuario) {
         Map<String, Integer> estadisticas = new HashMap<>();
-        
+
         estadisticas.put("comunidadesSeguidas", contarComunidadesSeguidas(idUsuario));
         estadisticas.put("solicitudesEnviadas", contarSolicitudesEnviadas(idUsuario));
         estadisticas.put("solicitudesAprobadas", contarSolicitudesAprobadas(idUsuario));
@@ -447,341 +440,323 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
         estadisticas.put("solicitudesPendientes", contarSolicitudesPendientes(idUsuario));
         estadisticas.put("comunidadesAdmin", contarComunidadesAdmin(idUsuario));
         estadisticas.put("comunidadesCreadas", contarComunidadesCreadas(idUsuario));
-        
+
         System.out.println("📊 Estadísticas completas obtenidas para usuario ID: " + idUsuario);
         return estadisticas;
     }
-    
+
     @Override
     public int contarComunidadesSeguidas(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidad_miembros WHERE id_usuario = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar comunidades seguidas: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     @Override
     public int contarSolicitudesEnviadas(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar solicitudes enviadas: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     @Override
     public int contarSolicitudesAprobadas(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ? AND estado = 'aprobada'";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar solicitudes aprobadas: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     @Override
     public int contarSolicitudesRechazadas(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ? AND estado = 'rechazada'";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar solicitudes rechazadas: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     @Override
     public int contarSolicitudesPendientes(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ? AND estado = 'pendiente'";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar solicitudes pendientes: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     @Override
     public int contarComunidadesAdmin(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidad_miembros WHERE id_usuario = ? AND rol = 'admin'";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar comunidades admin: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     @Override
     public int contarComunidadesCreadas(int idUsuario) {
         String sql = "SELECT COUNT(*) FROM comunidades WHERE id_creador = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al contar comunidades creadas: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return 0;
     }
-    
+
     // ============= INFORMACIÓN ADICIONAL =============
-    
     @Override
     public LocalDateTime obtenerUltimoAcceso(int idUsuario) {
         String sql = "SELECT ultimo_acceso FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 Timestamp timestamp = rs.getTimestamp("ultimo_acceso");
                 return timestamp != null ? timestamp.toLocalDateTime() : null;
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al obtener último acceso: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return null;
     }
-    
+
     @Override
     public boolean actualizarUltimoAcceso(int idUsuario) {
         String sql = "UPDATE usuarios SET ultimo_acceso = CURRENT_TIMESTAMP WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             return stmt.executeUpdate() > 0;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al actualizar último acceso: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public boolean estaVerificado(int idUsuario) {
         String sql = "SELECT verificado FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getBoolean("verificado");
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al verificar estado: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return false;
     }
-    
+
     @Override
     public Usuario obtenerUsuarioCompleto(int idUsuario) {
         String sql = "SELECT * FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return mapearUsuario(rs);
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al obtener usuario completo: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return null;
     }
-    
+
     // ============= MÉTODOS DE CONFIGURACIÓN =============
-    
     @Override
     public boolean actualizarConfiguracionNotificaciones(int idUsuario, boolean notificacionesEmail) {
         String sql = "UPDATE usuarios SET notificaciones_email = ? WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setBoolean(1, notificacionesEmail);
             stmt.setInt(2, idUsuario);
-            
+
             return stmt.executeUpdate() > 0;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al actualizar configuración notificaciones: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public boolean obtenerConfiguracionNotificaciones(int idUsuario) {
         String sql = "SELECT notificaciones_email FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getBoolean("notificaciones_email");
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al obtener configuración notificaciones: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return true; // Por defecto habilitadas
     }
-    
+
     @Override
     public boolean actualizarPrivacidadPerfil(int idUsuario, boolean perfilPrivado) {
         String sql = "UPDATE usuarios SET perfil_privado = ? WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setBoolean(1, perfilPrivado);
             stmt.setInt(2, idUsuario);
-            
+
             return stmt.executeUpdate() > 0;
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al actualizar privacidad perfil: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
-    
+
     @Override
     public boolean esPerfilPrivado(int idUsuario) {
         String sql = "SELECT perfil_privado FROM usuarios WHERE id = ?";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getBoolean("perfil_privado");
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al verificar privacidad perfil: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return false; // Por defecto público
     }
 
-    public boolean crearSolicitudVerificacion(int idUsuario, String motivo, String categoria, 
-                                             String documentoUrl, String enlaces) {
+    public boolean crearSolicitudVerificacion(int idUsuario, String motivo, String categoria,
+            String documentoUrl, String enlaces) {
         String sql = "INSERT INTO solicitudes_verificacion (id_usuario, motivo, categoria, documento_url, enlaces_adicionales) VALUES (?, ?, ?, ?, ?)";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, idUsuario);
             stmt.setString(2, motivo);
@@ -801,8 +776,7 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
     public boolean marcarSolicitudVerificacion(int idUsuario) {
         String sql = "UPDATE usuarios SET solicito_verificacion = true WHERE id = ?";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, idUsuario);
             return stmt.executeUpdate() > 0;
@@ -821,10 +795,9 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
         List<Usuario> usuarios = new ArrayList<>();
         String cleanUsername = username.startsWith("@") ? username.substring(1) : username;
 
-        String sql = "SELECT * FROM usuarios WHERE username = ? AND activo = true AND baneado = false ORDER BY verificado DESC";
+        String sql = "SELECT * FROM usuarios WHERE username = ? AND baneado = false ORDER BY verificado DESC";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, cleanUsername);
             ResultSet rs = stmt.executeQuery();
@@ -846,11 +819,10 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
      */
     public List<Usuario> buscarPorNombreCompleto(String termino) {
         List<Usuario> usuarios = new ArrayList<>();
-        String sql = "SELECT * FROM usuarios WHERE nombre_completo LIKE ? AND activo = true AND baneado = false " +
-                    "ORDER BY verificado DESC, nombre_completo ASC LIMIT 10";
+        String sql = "SELECT * FROM usuarios WHERE nombre_completo LIKE ? AND baneado = false "
+                + "ORDER BY verificado DESC, nombre_completo ASC LIMIT 10";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + termino + "%");
             ResultSet rs = stmt.executeQuery();
@@ -874,11 +846,10 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
         List<Usuario> usuarios = new ArrayList<>();
         String cleanTermino = termino.startsWith("@") ? termino.substring(1) : termino;
 
-        String sql = "SELECT * FROM usuarios WHERE username LIKE ? AND activo = true AND baneado = false " +
-                    "ORDER BY verificado DESC, username ASC LIMIT 10";
+        String sql = "SELECT * FROM usuarios WHERE username LIKE ? AND baneado = false "
+                + "ORDER BY verificado DESC, username ASC LIMIT 10";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + cleanTermino + "%");
             ResultSet rs = stmt.executeQuery();
@@ -900,7 +871,7 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
      */
     public List<Usuario> buscarEnBio(String termino) {
         List<Usuario> usuarios = new ArrayList<>();
-        String sql = "SELECT * FROM usuarios WHERE bio LIKE ? AND activo = true AND baneado = false " +
+        String sql = "SELECT * FROM usuarios WHERE bio LIKE ? AND baneado = false " +
                     "ORDER BY verificado DESC LIMIT 10";
 
         try (Connection conn = Conexion.getConexion(); 
@@ -918,191 +889,65 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
             e.printStackTrace();
         }
 
-        return usuarios;
-}
-
-    // ============= MÉTODOS NECESARIOS PARA ComunidadDAO =============
-
-    /*
-     * Agregar estos métodos a tu ComunidadDAO existente
-     */
-
-    /**
-     * Buscar comunidad por username exacto
-     */
-    public List<Comunidad> buscarPorUsernameExacto(String username) {
-        List<Comunidad> comunidades = new ArrayList<>();
-        String cleanUsername = username.startsWith("@") ? username.substring(1) : username;
-
-        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador " +
-                    "FROM comunidades c " +
-                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
-                    "WHERE c.comunidad_username = ? " +
-                    "ORDER BY c.seguidores_count DESC";
-
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, cleanUsername);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                comunidades.add(mapearComunidad(rs));
-            }
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error buscar comunidad username exacto: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return comunidades;
+        return usuarios; // ← Esta línea faltaba
     }
 
-    /**
-     * Buscar comunidades por nombre
-     */
-    public List<Comunidad> buscarPorNombre(String termino) {
-        List<Comunidad> comunidades = new ArrayList<>();
-        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador " +
-                    "FROM comunidades c " +
-                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
-                    "WHERE c.nombre LIKE ? " +
-                    "ORDER BY c.seguidores_count DESC LIMIT 10";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, "%" + termino + "%");
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                comunidades.add(mapearComunidad(rs));
-            }
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error buscar comunidad por nombre: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return comunidades;
-    }
-
-    /**
-     * Buscar comunidades por username (que contenga)
-     */
-    public List<Comunidad> buscarPorUsername(String termino) {
-        List<Comunidad> comunidades = new ArrayList<>();
-        String cleanTermino = termino.startsWith("@") ? termino.substring(1) : termino;
-
-        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador " +
-                    "FROM comunidades c " +
-                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
-                    "WHERE c.comunidad_username LIKE ? " +
-                    "ORDER BY c.seguidores_count DESC LIMIT 10";
-
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, "%" + cleanTermino + "%");
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                comunidades.add(mapearComunidad(rs));
-            }
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error buscar comunidad por username: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return comunidades;
-    }
-
-    /**
-     * Buscar comunidades en descripción
-     */
-    public List<Comunidad> buscarEnDescripcion(String termino) {
-        List<Comunidad> comunidades = new ArrayList<>();
-        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador " +
-                    "FROM comunidades c " +
-                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
-                    "WHERE c.descripcion LIKE ? " +
-                    "ORDER BY c.seguidores_count DESC LIMIT 10";
-
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, "%" + termino + "%");
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                comunidades.add(mapearComunidad(rs));
-            }
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error buscar en descripción: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return comunidades;
-    }
     // ============= MÉTODOS DE VALIDACIÓN =============
-    
+
     @Override
     public boolean validarUsuarioActivo(int idUsuario) {
-        String sql = "SELECT COUNT(*) FROM usuarios WHERE id = ? AND activo = true";
-        
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+        String sql = "SELECT COUNT(*) FROM usuarios WHERE id = ? AND baneado = false";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, idUsuario);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 return rs.getInt(1) > 0;
             }
-            
+
         } catch (SQLException e) {
             System.err.println("❌ Error al validar usuario activo: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return false;
     }
-    
+
     @Override
     public boolean validarFormatoEmail(String email) {
         if (email == null || email.trim().isEmpty()) {
             return false;
         }
-        
+
         return EMAIL_REGEX.matcher(email.trim()).matches();
     }
-    
+
     @Override
     public boolean validarFortalezaPassword(String password) {
         if (password == null || password.length() < 8) {
             return false;
         }
-        
+
         // Criterios mínimos:
         // - Al menos 8 caracteres
         // - Al menos una letra
         // - Al menos un número
         boolean tieneLetra = password.matches(".*[a-zA-Z].*");
         boolean tieneNumero = password.matches(".*\\d.*");
-        
+
         return tieneLetra && tieneNumero;
     }
-    
+
     // ============= MÉTODOS AUXILIARES =============
-    
     /**
      * Mapear ResultSet a objeto Usuario
      */
     private Usuario mapearUsuario(ResultSet rs) throws SQLException {
         Usuario usuario = new Usuario();
-        
+
         usuario.setId(rs.getInt("id"));
         usuario.setUsername(rs.getString("username"));
         usuario.setNombreCompleto(rs.getString("nombre_completo"));
@@ -1111,13 +956,38 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
         usuario.setAvatar(rs.getString("avatar"));
         usuario.setVerificado(rs.getBoolean("verificado"));
         usuario.setPrivilegio(rs.getBoolean("privilegio"));
-       
-        
+
         Timestamp ultimoAcceso = rs.getTimestamp("ultimo_acceso");
         if (ultimoAcceso != null) {
             usuario.setUltimoAcceso(ultimoAcceso.toLocalDateTime());
         }
-        
+
         return usuario;
+    }
+// 🔧 CORRECCIÓN 4: Agregar método faltante mapearComunidad
+
+    private Comunidad mapearComunidad(ResultSet rs) throws SQLException {
+        Comunidad comunidad = new Comunidad();
+
+        // Campos principales de la tabla comunidades
+        comunidad.setIdComunidad(rs.getInt("id"));
+        comunidad.setNombre(rs.getString("nombre"));
+        comunidad.setUsername(rs.getString("comunidad_username")); // o "username" según tu BD
+        comunidad.setDescripcion(rs.getString("descripcion"));
+        comunidad.setImagenUrl(rs.getString("imagen_url"));
+        comunidad.setIdCreador(rs.getInt("id_creador"));
+        comunidad.setEsPublica(rs.getBoolean("es_publica"));
+        comunidad.setSeguidoresCount(rs.getInt("seguidores_count"));
+        comunidad.setPublicacionesCount(rs.getInt("publicaciones_count"));
+
+        // Campos adicionales del JOIN con usuarios
+        try {
+            comunidad.setUsernameCreador(rs.getString("username_creador"));
+            comunidad.setNombreCreador(rs.getString("nombre_creador"));
+        } catch (SQLException e) {
+            // Campos opcionales del JOIN, pueden no estar disponibles
+        }
+
+        return comunidad;
     }
 }

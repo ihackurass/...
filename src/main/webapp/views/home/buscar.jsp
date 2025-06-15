@@ -105,23 +105,7 @@
             color: #1da1f2;
             background: rgba(29, 161, 242, 0.05);
         }
-        
-        .sidebar {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-        }
-        
-        .sidebar-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #14171a;
-            margin-bottom: 15px;
-        }
+      
         
         .recent-searches {
             list-style: none;
@@ -256,11 +240,6 @@
             line-height: 1.4;
         }
         
-        .community-result {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
         
         .community-avatar {
             width: 50px;
@@ -274,6 +253,8 @@
             font-weight: 700;
             font-size: 1.2rem;
             flex-shrink: 0;
+            margin-right: 0;
+            margin-left: 10px;
         }
         
         .community-avatar img {
@@ -314,10 +295,69 @@
             color: #657786;
             font-size: 13px;
         }
-        
+        .comunidad-result {
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .comunidad-result:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .community-result {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 15px; /* Espaciado entre avatar y contenido */
+        }
+
+        .community-avatar {
+            flex-shrink: 0; /* Evita que el avatar se encoja */
+            margin-right: 0; /* Removemos margin ya que usamos gap */
+        }
+
+        .community-info {
+            flex: 1; /* Toma el espacio disponible */
+            min-width: 0; /* Permite que el texto se corte si es necesario */
+        }
+
+        .community-action {
+            margin-left: auto;
+            color: #6c757d;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .comunidad-result:hover .community-action {
+            opacity: 1;
+        }
+
+        .community-meta i {
+            margin-right: 4px;
+            color: #6c757d;
+        }
+
+        .community-creator {
+            margin-top: 5px;
+        }
+
+        .community-name {
+            display: flex;
+            align-items: center;
+        }
+
+        .community-name h6 {
+            margin: 0;
+            font-weight: 600;
+        }
+
         .community-description {
-            color: #14171a;
-            font-size: 14px;
+            color: #495057;
+            font-size: 0.9rem;
             line-height: 1.4;
             margin-top: 5px;
         }
@@ -498,7 +538,10 @@
                                 <!-- Mostrar comunidades si tab es 'todo' o 'comunidades' -->
                                 <% if (("todo".equals(tabActiva) || "comunidades".equals(tabActiva)) && !comunidades.isEmpty()) { %>
                                     <% for (Comunidad comunidad : comunidades) { %>
-                                        <div class="result-item">
+                                        <div class="result-item comunidad-result" 
+                                             data-id-comunidad="<%= comunidad.getIdComunidad() %>"
+                                             onclick="verPerfilComunidad(<%= comunidad.getIdComunidad() %>)"
+                                             style="cursor: pointer;">
                                             <div class="community-result">
                                                 <div class="community-avatar">
                                                     <% 
@@ -516,15 +559,24 @@
                                                 <div class="community-info">
                                                     <div class="community-name">
                                                         <h6><%= comunidad.getNombre() %></h6>
-                                                        <!-- Las comunidades no tienen verificación por ahora -->
+                                                        <!-- Indicador de tipo de comunidad -->
+                                                        <% if (comunidad.isEsPublica()) { %>
+                                                            <i class="fas fa-globe text-success ml-2" title="Comunidad pública"></i>
+                                                        <% } else { %>
+                                                            <i class="fas fa-lock text-warning ml-2" title="Comunidad privada"></i>
+                                                        <% } %>
                                                     </div>
                                                     <% if (comunidad.getUsername() != null) { %>
                                                         <div class="community-username">@<%= comunidad.getUsername() %></div>
                                                     <% } %>
                                                     <div class="community-meta">
-                                                        <span><%= comunidad.getSeguidoresCount() %> miembros</span>
+                                                        <span><i class="fas fa-users"></i> <%= comunidad.getSeguidoresCount() %> miembros</span>
                                                         <span>•</span>
                                                         <span><%= comunidad.isEsPublica() ? "Pública" : "Privada" %></span>
+                                                        <% if (comunidad.getPublicacionesCount() > 0) { %>
+                                                            <span>•</span>
+                                                            <span><%= comunidad.getPublicacionesCount() %> publicaciones</span>
+                                                        <% } %>
                                                     </div>
                                                     <% if (comunidad.getDescripcion() != null && !comunidad.getDescripcion().trim().isEmpty()) { %>
                                                         <div class="community-description">
@@ -533,6 +585,16 @@
                                                                comunidad.getDescripcion() %>
                                                         </div>
                                                     <% } %>
+                                                    <% if (comunidad.getNombreCreador() != null) { %>
+                                                        <div class="community-creator">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-user-crown"></i> Creada por <%= comunidad.getNombreCreador() %>
+                                                            </small>
+                                                        </div>
+                                                    <% } %>
+                                                </div>
+                                                <div class="community-action">
+                                                    <i class="fas fa-chevron-right"></i>
                                                 </div>
                                             </div>
                                         </div>
@@ -577,14 +639,14 @@
                 return;
             }
             
-            window.location.href = 'buscar.jsp?q=' + encodeURIComponent(termino);
+            window.location.href = 'BuscarServlet?q=' + encodeURIComponent(termino);
         }
         
         // Cambiar pestañas
         function cambiarTab(tab) {
             const termino = '<%= terminoBusqueda %>';
             if (termino) {
-                window.location.href = 'buscar.jsp?q=' + encodeURIComponent(termino) + '&tab=' + tab;
+                window.location.href = 'BuscarServlet?q=' + encodeURIComponent(termino) + '&tab=' + tab;
             }
         }
         
@@ -602,14 +664,11 @@
             recientes.slice(0, 5).forEach(busqueda => {
                 const li = document.createElement('li');
                 li.className = 'recent-item';
-                li.innerHTML = `
-                    <a href="buscar.jsp?q=${encodeURIComponent(busqueda.termino)}" class="recent-link">
-                        ${busqueda.termino}
-                    </a>
-                    <span class="recent-time">${busqueda.tiempo}</span>
-                `;
-                container.appendChild(li);
-            });
+                li.innerHTML = '<a href="BuscarServlet?q=' + encodeURIComponent(busqueda.termino) + '" class="recent-link">' +
+                                   busqueda.termino +
+                               '</a>' +
+                               '<span class="recent-time">' + busqueda.tiempo + '</span>';
+                            });
         }
         
         // Guardar búsqueda en localStorage
@@ -679,7 +738,15 @@
                 document.getElementById('searchMainInput').focus();
             }
         });
-        
+        function verPerfilComunidad(idComunidad) {
+            if (!idComunidad) {
+                console.error('❌ ID de comunidad no válido:', idComunidad);
+                return;
+            }
+
+            // Usar el patrón existente de tu ComunidadServlet
+            window.location.href = 'ComunidadServlet?action=view&id=' + idComunidad;
+        }
         console.log('🔍 Página de búsqueda cargada. Término: "<%= terminoBusqueda %>"');
     </script>
 </body>

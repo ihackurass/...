@@ -101,7 +101,7 @@ public class BuscarServlet extends HttpServlet {
         request.setAttribute("tabActiva", tabActiva);
         
         // Forward a la página de búsqueda
-        request.getRequestDispatcher("/views/buscar.jsp").forward(request, response);
+        request.getRequestDispatcher("/views/home/buscar.jsp").forward(request, response);
     }
 
     @Override
@@ -166,7 +166,7 @@ public class BuscarServlet extends HttpServlet {
         
         try {
             // Buscar por diferentes criterios con prioridad
-            List<Comunidad> exactos = comunidadDAO.buscarPorUsernameExacto(termino);
+            List<Comunidad> exactos = comunidadDAO.buscarPorUsername(termino);
             List<Comunidad> nombre = comunidadDAO.buscarPorNombre(termino);
             List<Comunidad> username = comunidadDAO.buscarPorUsername(termino);
             List<Comunidad> descripcion = comunidadDAO.buscarEnDescripcion(termino);

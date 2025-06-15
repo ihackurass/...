@@ -37,7 +37,7 @@
                     <a href="HomeServlet"><span class="fas fa-home mr-3"></span>Home</a>
                 </li>
                 <li class="<%= uri.endsWith("buscar.jsp") ? "active" : ""%>">
-                    <a href="buscar.jsp"><span class="fas fa-search mr-3"></span>Buscar</a>
+                    <a href="BuscarServlet"><span class="fas fa-search mr-3"></span>Buscar</a>
                 </li>
                 <li class="<%= uri.endsWith("notificaciones.jsp") ? "active" : ""%>">
                     <a href="notificaciones.jsp"><span class="fas fa-bell mr-3"></span>Notificaciones <span class="badge">10</span></a>

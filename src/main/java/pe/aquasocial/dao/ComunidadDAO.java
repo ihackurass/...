@@ -578,7 +578,7 @@ public class ComunidadDAO implements IComunidadDAO {
         String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador, u.avatar as avatar_creador "
                 + "FROM comunidades c "
                 + "LEFT JOIN usuarios u ON c.id_creador = u.id "
-                + "WHERE c.es_publica = TRUE AND LOWER(c.nombre) LIKE LOWER(?) "
+                + "WHERE LOWER(c.nombre) LIKE LOWER(?) "
                 + "ORDER BY c.seguidores_count DESC";
 
         try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -594,6 +594,37 @@ public class ComunidadDAO implements IComunidadDAO {
             System.err.println("❌ Error al buscar comunidades: " + e.getMessage());
             e.printStackTrace();
         }
+        return comunidades;
+    }
+
+    public List<Comunidad> buscarPorUsernameExacto(String username) {
+        List<Comunidad> comunidades = new ArrayList<>();
+        String cleanUsername = username.startsWith("@") ? username.substring(1) : username;
+
+        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador, u.avatar as avatar_creador "
+                + "FROM comunidades c "
+                + "LEFT JOIN usuarios u ON c.id_creador = u.id "
+                + "WHERE c.comunidad_username = ? "
+                + "ORDER BY c.seguidores_count DESC";
+
+        try (Connection conn = Conexion.getConexion(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, cleanUsername);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+            System.out.println("🎯 Búsqueda exacta de comunidad por username: " + cleanUsername + 
+                              " - Encontradas: " + comunidades.size());
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error buscar comunidad username exacto: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         return comunidades;
     }
 
@@ -1207,6 +1238,96 @@ public class ComunidadDAO implements IComunidadDAO {
         return 0;
     }
 // ============= MÉTODOS AUXILIARES PARA MAPEO =============
+    // ============= MÉTODOS NECESARIOS PARA ComunidadDAO =============
+
+    public List<Comunidad> buscarEnDescripcion(String termino) {
+        List<Comunidad> comunidades = new ArrayList<>();
+
+        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador, u.avatar as avatar_creador "
+                + "FROM comunidades c "
+                + "LEFT JOIN usuarios u ON c.id_creador = u.id "
+                + "WHERE LOWER(c.descripcion) LIKE LOWER(?) "
+                + "ORDER BY c.seguidores_count DESC LIMIT 10";
+
+        try (Connection conn = Conexion.getConexion(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + termino + "%");
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+            System.out.println("📝 Búsqueda en descripción: " + termino + 
+                              " - Encontradas: " + comunidades.size());
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error buscar en descripción: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return comunidades;
+    }
+
+    public List<Comunidad> buscarPorUsername(String termino) {
+        List<Comunidad> comunidades = new ArrayList<>();
+        String cleanTermino = termino.startsWith("@") ? termino.substring(1) : termino;
+
+        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador, u.avatar as avatar_creador "
+                + "FROM comunidades c "
+                + "LEFT JOIN usuarios u ON c.id_creador = u.id "
+                + "WHERE c.comunidad_username LIKE ? "
+                + "ORDER BY c.seguidores_count DESC LIMIT 10";
+
+        try (Connection conn = Conexion.getConexion(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + cleanTermino + "%");
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+            System.out.println("🔍 Búsqueda por username: " + cleanTermino + 
+                              " - Encontradas: " + comunidades.size());
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error buscar comunidad por username: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return comunidades;
+    }
+
+    /**
+     * Buscar comunidades en descripción
+     */
+    public List<Comunidad> buscarComunidadEnDescripcion(String termino) {
+        List<Comunidad> comunidades = new ArrayList<>();
+        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador "
+                + "FROM comunidades c "
+                + "LEFT JOIN usuarios u ON c.id_creador = u.id "
+                + "WHERE c.descripcion LIKE ? "
+                + "ORDER BY c.seguidores_count DESC LIMIT 10";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + termino + "%");
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error buscar en descripción: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return comunidades;
+    }
 
     /**
      * Mapear ResultSet a SolicitudMembresia (básico)
