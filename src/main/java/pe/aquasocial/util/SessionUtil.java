@@ -278,6 +278,10 @@ public class SessionUtil {
         return null;
     }
     
+    public static void updateUserSession(HttpServletRequest request, Usuario usuario) {
+    HttpSession session = request.getSession();
+    session.setAttribute("usuarioLogueado", usuario);
+}
     /**
      * Obtiene el ID del usuario desde las cookies
      * @param request HttpServletRequest

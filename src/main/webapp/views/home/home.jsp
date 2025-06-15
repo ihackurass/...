@@ -64,11 +64,13 @@
                 margin-bottom: 15px;
             }
 
-            .post-header img {
+            .post-header img,
+            .post-header .profile-avatar {  /* ⭐ AGREGAR ESTA LÍNEA */
                 width: 50px;
                 height: 50px;
                 border-radius: 50%;
                 margin-right: 10px;
+                object-fit: cover;  /* ⭐ AGREGAR ESTO TAMBIÉN para evitar deformación */
             }
 
             .badge {
@@ -1829,7 +1831,7 @@
 
                             <!-- Información del usuario destinatario -->
                             <div class="d-flex mb-3" id="donationUserInfo">
-                                <img src="assets/images/avatars/default.png" alt="User Avatar" class="rounded-circle" width="50" height="50" id="donationUserAvatar">
+                                <img src="assets/images/avatars/default.png" alt="User Avatar" width="50" height="50" id="donationUserAvatar">
                                 <div class="ms-3">
                                     <p class="font-weight-bold mb-0 creator-name">Usuario</p>
                                     <p class="mb-0" id="donationUserHandle">@usuario</p>

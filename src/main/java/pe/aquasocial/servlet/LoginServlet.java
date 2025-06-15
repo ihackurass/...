@@ -124,9 +124,11 @@ public class LoginServlet extends HttpServlet {
             try (Connection conn = Conexion.getConexion()) {
 
                 // Verificar estado del usuario
-                String sqlEstado = "SELECT id, password,nombre_completo, rol, intentos_fallidos, bloqueo_hasta, baneado, "
-                        + "username, email, avatar, verificado, privilegio, solicito_verificacion, telefono "
-                        + "FROM usuarios WHERE username = ?";
+                String sqlEstado = "SELECT id, password, nombre_completo, rol, intentos_fallidos, bloqueo_hasta, baneado, "
+                                 + "username, email, avatar, verificado, privilegio, solicito_verificacion, telefono, "
+                                 + "fecha_registro, ultimo_acceso, fecha_actualizacion, "
+                                 + "bio "
+                                 + "FROM usuarios WHERE username = ?";
 
                 try (PreparedStatement stmtEstado = conn.prepareStatement(sqlEstado)) {
                     stmtEstado.setString(1, username);
@@ -178,19 +180,46 @@ public class LoginServlet extends HttpServlet {
                             stmtReset.setInt(1, id);
                             stmtReset.executeUpdate();
                         }
-
-                        // Crear objeto Usuario
                         Usuario usuario = new Usuario();
-                        usuario.setId(id);
+                        // Crear objeto Usuario
+                        usuario.setId(rsEstado.getInt("id"));
                         usuario.setUsername(rsEstado.getString("username"));
                         usuario.setNombreCompleto(rsEstado.getString("nombre_completo"));
+                        usuario.setPassword(rsEstado.getString("password"));  // ⭐ FALTABA
                         usuario.setEmail(rsEstado.getString("email"));
-                        usuario.setRol(rol);
+                        usuario.setRol(rsEstado.getString("rol"));  // ⭐ CORREGIDO (era variable, debe ser de ResultSet)
                         usuario.setAvatar(rsEstado.getString("avatar"));
                         usuario.setVerificado(rsEstado.getBoolean("verificado"));
                         usuario.setPrivilegio(rsEstado.getBoolean("privilegio"));
+                        usuario.setBaneado(rsEstado.getBoolean("baneado"));  // ⭐ FALTABA
                         usuario.setSolicitoVerificacion(rsEstado.getBoolean("solicito_verificacion"));
                         usuario.setTelefono(rsEstado.getString("telefono"));
+                        usuario.setIntentosFallidos(rsEstado.getInt("intentos_fallidos"));  // ⭐ FALTABA
+
+                        // Timestamps existentes
+                        Timestamp bloqueHasta = rsEstado.getTimestamp("bloqueo_hasta");
+                        if (bloqueHasta != null) {
+                            usuario.setBloqueHasta(bloqueHasta);  // ⭐ FALTABA
+                        }
+
+                        Timestamp fechaRegistro = rsEstado.getTimestamp("fecha_registro");
+                        if (fechaRegistro != null) {
+                            usuario.setFechaRegistro(fechaRegistro);  // ⭐ FALTABA
+                        }
+
+                        Timestamp ultimoAcceso = rsEstado.getTimestamp("ultimo_acceso");
+                        if (ultimoAcceso != null) {
+                            usuario.setUltimoAcceso(ultimoAcceso.toLocalDateTime());
+                        }
+
+                        Timestamp fechaActualizacion = rsEstado.getTimestamp("fecha_actualizacion");
+                        if (fechaActualizacion != null) {
+                            usuario.setFechaActualizacion(fechaActualizacion.toLocalDateTime());
+                        }
+
+                        // ⭐ NUEVOS CAMPOS DE CONFIGURACIÓN
+                        usuario.setBio(rsEstado.getString("bio"));
+
 
                         // Crear sesión
                         HttpSession session = request.getSession();

@@ -1060,13 +1060,161 @@ public class ComunidadDAO implements IComunidadDAO {
         }
     }
 
+    public int contarComunidadesSeguidas(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM comunidad_miembros WHERE id_usuario = ?";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("👥 Usuario " + idUsuario + " sigue " + count + " comunidades");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar comunidades seguidas: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Contar solicitudes de membresía enviadas por un usuario
+     */
+    public int contarSolicitudesUsuario(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ?";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("📝 Usuario " + idUsuario + " ha enviado " + count + " solicitudes");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar solicitudes del usuario: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Contar solicitudes aprobadas de un usuario
+     */
+    public int contarSolicitudesAprobadas(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ? AND estado = 'aprobada'";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("✅ Usuario " + idUsuario + " tiene " + count + " solicitudes aprobadas");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar solicitudes aprobadas: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Contar comunidades donde el usuario es administrador
+     */
+    public int contarComunidadesAdmin(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM comunidad_miembros WHERE id_usuario = ? AND rol = 'admin'";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("🛡️ Usuario " + idUsuario + " es admin en " + count + " comunidades");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar comunidades admin: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * BONUS: Contar solicitudes rechazadas de un usuario
+     */
+    public int contarSolicitudesRechazadas(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM comunidad_solicitudes WHERE id_usuario = ? AND estado = 'rechazada'";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("❌ Usuario " + idUsuario + " tiene " + count + " solicitudes rechazadas");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar solicitudes rechazadas: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * BONUS: Contar comunidades creadas por el usuario
+     */
+    public int contarComunidadesCreadas(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM comunidades WHERE id_creador = ?";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("🏗️ Usuario " + idUsuario + " ha creado " + count + " comunidades");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar comunidades creadas: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
 // ============= MÉTODOS AUXILIARES PARA MAPEO =============
+
     /**
      * Mapear ResultSet a SolicitudMembresia (básico)
      */
     private SolicitudMembresia mapearSolicitudMembresia(ResultSet rs) throws SQLException {
         SolicitudMembresia solicitud = new SolicitudMembresia();
 
+        // Campos básicos de la solicitud
         solicitud.setIdSolicitud(rs.getInt("id_solicitud"));
         solicitud.setIdComunidad(rs.getInt("id_comunidad"));
         solicitud.setIdUsuario(rs.getInt("id_usuario"));
@@ -1084,19 +1232,33 @@ public class ComunidadDAO implements IComunidadDAO {
             solicitud.setFechaRespuesta(fechaRespuesta.toLocalDateTime());
         }
 
-        // ⭐ DATOS DEL USUARIO CON NOMBRES CORRECTOS
-        try {
-            // Intentar con alias primero
-            solicitud.setUsernameUsuario(rs.getString("username_usuario"));
-            solicitud.setNombreCompletoUsuario(rs.getString("nombre_usuario"));
-            solicitud.setAvatarUsuario(rs.getString("avatar_usuario"));
-            solicitud.setEmailUsuario(rs.getString("email_usuario"));
-        } catch (SQLException e) {
-            // Si falla, usar nombres originales
-            solicitud.setUsernameUsuario(rs.getString("username"));
-            solicitud.setNombreCompletoUsuario(rs.getString("nombre_completo"));
-            solicitud.setAvatarUsuario(rs.getString("avatar"));
-            solicitud.setEmailUsuario(rs.getString("email"));
+        // Datos del usuario solicitante (siempre presentes)
+        solicitud.setUsernameUsuario(rs.getString("username_usuario"));
+        solicitud.setNombreCompletoUsuario(rs.getString("nombre_usuario"));
+        solicitud.setAvatarUsuario(rs.getString("avatar_usuario"));
+        solicitud.setEmailUsuario(rs.getString("email_usuario"));
+
+        // ⭐ DATOS DEL ADMIN (PUEDEN SER NULL EN SOLICITUDES PENDIENTES)
+        String usernameAdmin = rs.getString("username_admin");
+        if (usernameAdmin != null && !rs.wasNull()) {
+            solicitud.setUsernameAdmin(usernameAdmin);
+        }
+
+        String nombreAdmin = rs.getString("nombre_admin");
+        if (nombreAdmin != null && !rs.wasNull()) {
+            solicitud.setNombreCompletoAdmin(nombreAdmin);
+        }
+
+        // ID admin respuesta (puede ser NULL)
+        int idAdminRespuesta = rs.getInt("id_admin_respuesta");
+        if (!rs.wasNull()) {
+            solicitud.setIdAdminRespuesta(idAdminRespuesta);
+        }
+
+        // Mensaje de respuesta (puede ser NULL)
+        String mensajeRespuesta = rs.getString("mensaje_respuesta");
+        if (mensajeRespuesta != null && !rs.wasNull()) {
+            solicitud.setMensajeRespuesta(mensajeRespuesta);
         }
 
         return solicitud;

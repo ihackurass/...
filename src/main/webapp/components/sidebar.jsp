@@ -7,7 +7,23 @@
     </div>
     <div class="side-inner">
         <div class="profile">
-            <img src="assets/images/avatars/default.png" alt="Image" class="img-fluid">
+        <%
+            pe.aquasocial.entity.Usuario usuario = (pe.aquasocial.entity.Usuario) session.getAttribute("usuarioLogueado");
+            String avatar = usuario != null ? usuario.getAvatar() : null;
+            String nombreCompleto = usuario != null ? usuario.getNombreCompleto() : "Usuario";
+
+            boolean tieneAvatarPersonalizado = avatar != null && 
+                                              !avatar.trim().isEmpty() && 
+                                              !avatar.endsWith("default.png");
+        %>
+
+        <% if (tieneAvatarPersonalizado) { %>
+            <img src="<%= avatar %>" alt="Profile" class="profile-avatar">
+        <% } else { %>
+            <div class="profile-avatar-default">
+                <%= nombreCompleto.substring(0,1).toUpperCase() %>
+            </div>
+        <% } %>
             <h3 class="name">${sessionScope.usuarioLogueado.nombreCompleto}</h3>
             <span class="country">@${sessionScope.usuarioLogueado.username}</span>
 
@@ -57,8 +73,8 @@
                    </c:if>
                 </ul>
                 </li>
-                <li class="<%= uri.endsWith("mi-perfil.jsp") ? "active" : ""%>">
-                    <a href="mi-perfil.jsp"><span class="fas fa-user mr-3"></span>Mi Perfil</a>
+                <li class="<%= uri.contains("/user/") || uri.endsWith("mi-perfil.jsp") ? "active" : ""%>">
+                    <a href="PerfilServlet"><span class="fas fa-user mr-3"></span>Mi Perfil</a>
                 </li>
                 <li><a href="LogoutServlet" class="text-danger"><span class="fas fa-sign-out-alt mr-3"></span>Cerrar Sesión</a></li>
                 
@@ -82,7 +98,31 @@
     </div>
 </aside>
 <style>
+    /* Agregar a tu CSS: */
+    .profile-avatar {
+        width: 80px;          /* Tamaño fijo para sidebar */
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;    /* Mantiene proporción sin deformar */
+        object-position: center;
+        border: 3px solid rgba(255,255,255,0.1);
+        display: block;
+        margin: 0 auto;      /* Centrar en el sidebar */
+    }
     
+    .profile-avatar-default {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #007bff, #6610f2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0 auto;
+    }
     .comunidades-nav.active > .nav-link {
         background-color: #e3f2fd;
         color: #1976d2;
