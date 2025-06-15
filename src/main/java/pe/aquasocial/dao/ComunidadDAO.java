@@ -762,6 +762,39 @@ public class ComunidadDAO implements IComunidadDAO {
     /**
      * Obtener todas las solicitudes para una comunidad (todas las estados)
      */
+// ⭐ MÉTODO ESPECÍFICO PARA HISTORIAL COMPLETO
+    public List<SolicitudMembresia> obtenerHistorialCompleto(int idComunidad) {
+        List<SolicitudMembresia> solicitudes = new ArrayList<>();
+        String sql = "SELECT s.*, "
+                + "u.username as username_usuario, u.nombre_completo as nombre_usuario, u.avatar as avatar_usuario, u.email as email_usuario, "
+                + "a.username as username_admin, a.nombre_completo as nombre_admin, "
+                + "c.nombre as nombre_comunidad, c.comunidad_username as username_comunidad "
+                + "FROM comunidad_solicitudes s "
+                + "JOIN usuarios u ON s.id_usuario = u.id "
+                + "LEFT JOIN usuarios a ON s.id_admin_respuesta = a.id "
+                + "JOIN comunidades c ON s.id_comunidad = c.id_comunidad "
+                + "WHERE s.id_comunidad = ? "
+                + "ORDER BY s.fecha_solicitud DESC";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idComunidad);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                SolicitudMembresia solicitud = mapearHistorialCompleto(rs);
+                solicitudes.add(solicitud);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener historial completo: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return solicitudes;
+    }
+
+// ⭐ MÉTODO SIMPLIFICADO PARA OTRAS CONSULTAS
     public List<SolicitudMembresia> obtenerTodasLasSolicitudes(int idComunidad) {
         List<SolicitudMembresia> solicitudes = new ArrayList<>();
         String sql = "SELECT s.*, "
@@ -779,16 +812,57 @@ public class ComunidadDAO implements IComunidadDAO {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                SolicitudMembresia solicitud = mapearSolicitudMembresiaCompleta(rs);
+                SolicitudMembresia solicitud = mapearSolicitudConAdmin(rs);
                 solicitudes.add(solicitud);
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error al obtener todas las solicitudes: " + e.getMessage());
+            System.err.println("❌ Error al obtener solicitudes: " + e.getMessage());
             e.printStackTrace();
         }
 
         return solicitudes;
+    }
+
+// ⭐ MAPEO PARA HISTORIAL COMPLETO
+    private SolicitudMembresia mapearHistorialCompleto(ResultSet rs) throws SQLException {
+        SolicitudMembresia solicitud = mapearSolicitudMembresia(rs);
+
+        // Datos del admin
+        solicitud.setUsernameAdmin(rs.getString("username_admin"));
+        solicitud.setNombreCompletoAdmin(rs.getString("nombre_admin"));
+
+        // Datos de la comunidad
+        solicitud.setNombreComunidad(rs.getString("nombre_comunidad"));
+        solicitud.setUsernameComunidad(rs.getString("username_comunidad"));
+
+        // ID admin respuesta
+        int idAdminRespuesta = rs.getInt("id_admin_respuesta");
+        if (!rs.wasNull()) {
+            solicitud.setIdAdminRespuesta(idAdminRespuesta);
+        }
+
+        solicitud.setMensajeRespuesta(rs.getString("mensaje_respuesta"));
+
+        return solicitud;
+    }
+
+// ⭐ MAPEO SIN DATOS DE COMUNIDAD
+    private SolicitudMembresia mapearSolicitudConAdmin(ResultSet rs) throws SQLException {
+        SolicitudMembresia solicitud = mapearSolicitudMembresia(rs);
+
+        // Solo datos del admin
+        solicitud.setUsernameAdmin(rs.getString("username_admin"));
+        solicitud.setNombreCompletoAdmin(rs.getString("nombre_admin"));
+
+        int idAdminRespuesta = rs.getInt("id_admin_respuesta");
+        if (!rs.wasNull()) {
+            solicitud.setIdAdminRespuesta(idAdminRespuesta);
+        }
+
+        solicitud.setMensajeRespuesta(rs.getString("mensaje_respuesta"));
+
+        return solicitud;
     }
 
     /**
