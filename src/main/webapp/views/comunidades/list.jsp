@@ -717,7 +717,22 @@
                                         <!-- Header de la comunidad -->
                                         <div class="community-header">
                                             <div class="community-avatar">
-                                                <%= comunidad.getNombre().substring(0,1).toUpperCase() %>
+                                                <% 
+                                                    String imagenUrl = comunidad.getImagenUrl();
+                                                    String nombreComunidad = comunidad.getNombre();
+
+                                                    boolean tieneImagenPersonalizada = imagenUrl != null && 
+                                                                                      !imagenUrl.trim().isEmpty() && 
+                                                                                      !imagenUrl.equals("default.png") &&
+                                                                                      !imagenUrl.endsWith("default.png");
+                                                %>
+
+                                                <% if (tieneImagenPersonalizada) { %>
+                                                    <img src="<%= imagenUrl %>" alt="<%= nombreComunidad %>" 
+                                                         style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+                                                <% } else { %>
+                                                    <%= nombreComunidad != null ? nombreComunidad.substring(0,1).toUpperCase() : "C" %>
+                                                <% } %>
                                             </div>
                                             <div class="community-info">
                                                 <h3><%= comunidad.getNombre() %></h3>
