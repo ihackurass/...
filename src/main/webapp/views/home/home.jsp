@@ -1987,7 +1987,9 @@
                                         @SuppressWarnings("unchecked")
                                         List<Comentario> comentarios = (List<Comentario>) request.getAttribute("comentarios_" + pub.getIdPublicacion());
                                 %>
-                                        <div class="post-container" data-post-id="<%= pub.getIdPublicacion() %>">
+                                        <div class="post-container" data-post-id="<%= pub.getIdPublicacion() %>" 
+                                             id="publicacion-<%= pub.getIdPublicacion() %>"
+                                             data-id="<%= pub.getIdPublicacion() %>">
 
                                             <% if (pub.getNombreComunidad() != null && !pub.getNombreComunidad().trim().isEmpty()) { %>
                                                 <div class="community-header">
@@ -3424,6 +3426,98 @@
                 });
             }
             window.currentPage = 'home';
+            
+            function scrollToPublicacion() {
+                // Obtener parámetro scrollTo de la URL
+                var urlParams = new URLSearchParams(window.location.search);
+                var scrollToId = urlParams.get('scrollTo');
+
+                if (scrollToId) {
+                    console.log('🎯 Buscando publicación para scroll: ' + scrollToId);
+
+                    // Buscar la publicación por ID usando jQuery
+                    var elemento = $('#publicacion-' + scrollToId).length ? $('#publicacion-' + scrollToId) :
+                                  $('[data-post-id="' + scrollToId + '"]').length ? $('[data-post-id="' + scrollToId + '"]') :
+                                  $('.post-container[data-id="' + scrollToId + '"]');
+
+                    if (elemento.length > 0) {
+                        // Hacer scroll suave hacia la publicación
+                        setTimeout(function() {
+                            $('html, body').animate({
+                                scrollTop: elemento.offset().top - 100
+                            }, 800);
+
+                            // Resaltar la publicación temporalmente
+                            elemento.css({
+                                'transition': 'all 0.5s ease',
+                                'border': '2px solid #007bff',
+                                'background-color': '#e3f2fd',
+                                'border-radius': '10px',
+                                'padding': '10px'
+                            });
+
+                            // Quitar el resaltado después de 3 segundos
+                            setTimeout(function() {
+                                elemento.css({
+                                    'border': '',
+                                    'background-color': '',
+                                    'padding': ''
+                                });
+                            }, 3000);
+
+                            console.log('✅ Scroll completado a publicación: ' + scrollToId);
+                        }, 500);
+
+                    } else {
+                        console.warn('⚠️ No se encontró la publicación: ' + scrollToId);
+
+                        // Intentar de nuevo después de un momento
+                        setTimeout(function() {
+                            var elementoRetry = $('#publicacion-' + scrollToId);
+                            if (elementoRetry.length > 0) {
+                                $('html, body').animate({
+                                    scrollTop: elementoRetry.offset().top - 100
+                                }, 800);
+                            } else {
+                                // Si no se encuentra, mostrar mensaje
+                                alert('Publicación no encontrada en esta página');
+                            }
+                        }, 2000);
+                    }
+                }
+            }
+
+            // Ejecutar cuando el documento esté listo (jQuery)
+            $(document).ready(function() {
+                console.log('🏠 Home cargado, verificando scroll...');
+                scrollToPublicacion();
+            });
+
+            // También ejecutar después de que se cargue todo (window.load)
+            $(window).on('load', function() {
+                // Segundo intento por si las publicaciones se cargan después
+                scrollToPublicacion();
+            });
+
+            // Limpiar la URL después del scroll (opcional)
+            function limpiarURLScroll() {
+                var urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('scrollTo')) {
+                    // Crear nueva URL sin el parámetro scrollTo
+                    urlParams.delete('scrollTo');
+                    var nuevaURL = window.location.pathname + 
+                                  (urlParams.toString() ? '?' + urlParams.toString() : '') + 
+                                  window.location.hash;
+
+                    // Actualizar URL sin recargar la página
+                    window.history.replaceState({}, document.title, nuevaURL);
+                }
+            }
+
+            // Limpiar URL después de 5 segundos
+            setTimeout(limpiarURLScroll, 5000);
+
+            console.log('📄 Script de scroll a publicaciones cargado');
         </script>
     </body>
 </html>

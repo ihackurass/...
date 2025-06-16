@@ -348,7 +348,6 @@ public class PublicacionDAO implements IPublicacionDAO {
                 pub.setFechaPublicacion(timestamp.toLocalDateTime());
             }
 
-            // Datos del usuario
             pub.setNombreUsuario("@" + rs.getString("nombre_usuario"));
             pub.setAvatarUsuario(rs.getString("avatar_usuario"));
             pub.setNombreCompleto(rs.getString("nombre_completo"));
@@ -464,7 +463,45 @@ public class PublicacionDAO implements IPublicacionDAO {
         }
         return publicaciones;
     }
+    public List<Publicacion> buscarPorTexto(String termino) {
+        List<Publicacion> publicaciones = new ArrayList<>();
+        String sql = "SELECT p.*, u.username, u.nombre_completo, u.avatar, u.verificado, " +
+                    "COALESCE(l.cantidad_likes, 0) as cantidad_likes, " +
+                    "COALESCE(c.cantidad_comentarios, 0) as cantidad_comentarios " +
+                    "FROM publicaciones p " +
+                    "LEFT JOIN usuarios u ON p.id_usuario = u.id " +
+                    "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_likes FROM likes GROUP BY id_publicacion) l " +
+                    "    ON p.id_publicacion = l.id_publicacion " +
+                    "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_comentarios FROM comentarios GROUP BY id_publicacion) c " +
+                    "    ON p.id_publicacion = c.id_publicacion " +
+                    "WHERE p.esta_aprobado = TRUE " +
+                    "AND (LOWER(p.texto) LIKE LOWER(?) OR LOWER(u.nombre_completo) LIKE LOWER(?)) " +
+                    "ORDER BY p.fecha_publicacion DESC " +
+                    "LIMIT 15";
 
+        try (Connection conn = Conexion.getConexion(); 
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            String searchTerm = "%" + termino + "%";
+            stmt.setString(1, searchTerm);
+            stmt.setString(2, searchTerm);
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                publicaciones.add(mapearPublicacionBasica(rs));
+            }
+
+            System.out.println("🔍 Búsqueda en publicaciones: " + termino + 
+                              " - Encontradas: " + publicaciones.size());
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al buscar publicaciones por texto: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return publicaciones;
+    }
     @Override
     public boolean aprobar(int idPublicacion) {
         String sql = "UPDATE publicaciones SET esta_aprobado = TRUE WHERE id_publicacion = ?";
@@ -543,7 +580,8 @@ public class PublicacionDAO implements IPublicacionDAO {
         pub.setImagenUrl(rs.getString("imagen_url"));
         pub.setPermiteDonacion(rs.getBoolean("permite_donacion"));
         pub.setEstaAprobado(rs.getBoolean("esta_aprobado"));
-
+        pub.setCantidadLikes(rs.getInt("cantidad_likes"));
+        pub.setCantidadComentarios(rs.getInt("cantidad_comentarios"));
         Timestamp timestamp = rs.getTimestamp("fecha_publicacion");
         if (timestamp != null) {
             pub.setFechaPublicacion(timestamp.toLocalDateTime());
