@@ -585,32 +585,6 @@
                 console.log('⚠️ No se cargó actividad reciente');
             <% } %>
             
-            // Funcionalidad para botones de seguir/mensaje
-            $('.btn-seguir').click(function() {
-                showInfo('Funcionalidad de seguir usuario próximamente');
-            });
-            
-            $('.btn-mensaje').click(function() {
-                showInfo('Funcionalidad de mensajes próximamente');
-            });
-        });
-        
-        // Funciones para mostrar notificaciones
-        function showInfo(message) {
-            const notification = $(`
-                <div class="alert alert-info alert-dismissible fade show position-fixed" 
-                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-                    <i class="fas fa-info-circle"></i> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `);
-            
-            $('body').append(notification);
-            
-            setTimeout(() => {
-                notification.alert('close');
-            }, 3000);
-        }
     </script>
 </body>
 </html>
