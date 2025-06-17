@@ -7,7 +7,9 @@ package pe.aquasocial.dao;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import pe.aquasocial.dao.IPublicacionDAO;
 import pe.aquasocial.entity.Publicacion;
 import pe.aquasocial.util.Conexion;
@@ -403,6 +405,73 @@ public class PublicacionDAO implements IPublicacionDAO {
         return publicaciones;
     }
 
+    public List<Publicacion> obtenerPublicacionesRecientesUsuario(int idUsuario, int limite) {
+        List<Publicacion> publicaciones = new ArrayList<>();
+        String sql = "SELECT p.*, u.nombre_completo, u.username, u.avatar, "
+                + "COALESCE(l.cantidad_likes, 0) as cantidad_likes, "
+                + "COALESCE(c.cantidad_comentarios, 0) as cantidad_comentarios, "
+                + "com.nombre as nombre_comunidad "
+                + "FROM publicaciones p "
+                + "LEFT JOIN usuarios u ON p.id_usuario = u.id "
+                + "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_likes FROM likes GROUP BY id_publicacion) l "
+                + "    ON p.id_publicacion = l.id_publicacion "
+                + "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_comentarios FROM comentarios GROUP BY id_publicacion) c "
+                + "    ON p.id_publicacion = c.id_publicacion "
+                + "LEFT JOIN comunidades com ON p.id_comunidad = com.id_comunidad "
+                + "WHERE p.id_usuario = ? AND p.esta_aprobado = TRUE "
+                + "ORDER BY p.fecha_publicacion DESC LIMIT ?";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idUsuario);
+            stmt.setInt(2, limite);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Publicacion pub = mapearPublicacionBasica(rs);
+
+                // Agregar información adicional
+                pub.setCantidadLikes(rs.getInt("cantidad_likes"));
+                pub.setCantidadComentarios(rs.getInt("cantidad_comentarios"));
+
+                String nombreComunidad = rs.getString("nombre_comunidad");
+                if (nombreComunidad != null) {
+                    pub.setNombreComunidad(nombreComunidad);
+                }
+
+                publicaciones.add(pub);
+            }
+
+            System.out.println("📱 Obtenidas " + publicaciones.size() + " publicaciones recientes del usuario " + idUsuario);
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener publicaciones recientes del usuario: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return publicaciones;
+    }
+
+    public int contarPublicacionesAprobadasUsuario(int idUsuario) {
+        String sql = "SELECT COUNT(*) FROM publicaciones WHERE id_usuario = ? AND esta_aprobado = TRUE";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1);
+                System.out.println("✅ Usuario " + idUsuario + " tiene " + count + " publicaciones aprobadas");
+                return count;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al contar publicaciones aprobadas por usuario: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     @Override
     public List<Publicacion> obtenerAprobadas() {
         List<Publicacion> publicaciones = new ArrayList<>();
@@ -463,24 +532,24 @@ public class PublicacionDAO implements IPublicacionDAO {
         }
         return publicaciones;
     }
+
     public List<Publicacion> buscarPorTexto(String termino) {
         List<Publicacion> publicaciones = new ArrayList<>();
-        String sql = "SELECT p.*, u.username, u.nombre_completo, u.avatar, u.verificado, " +
-                    "COALESCE(l.cantidad_likes, 0) as cantidad_likes, " +
-                    "COALESCE(c.cantidad_comentarios, 0) as cantidad_comentarios " +
-                    "FROM publicaciones p " +
-                    "LEFT JOIN usuarios u ON p.id_usuario = u.id " +
-                    "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_likes FROM likes GROUP BY id_publicacion) l " +
-                    "    ON p.id_publicacion = l.id_publicacion " +
-                    "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_comentarios FROM comentarios GROUP BY id_publicacion) c " +
-                    "    ON p.id_publicacion = c.id_publicacion " +
-                    "WHERE p.esta_aprobado = TRUE " +
-                    "AND (LOWER(p.texto) LIKE LOWER(?) OR LOWER(u.nombre_completo) LIKE LOWER(?)) " +
-                    "ORDER BY p.fecha_publicacion DESC " +
-                    "LIMIT 15";
+        String sql = "SELECT p.*, u.username, u.nombre_completo, u.avatar, u.verificado, "
+                + "COALESCE(l.cantidad_likes, 0) as cantidad_likes, "
+                + "COALESCE(c.cantidad_comentarios, 0) as cantidad_comentarios "
+                + "FROM publicaciones p "
+                + "LEFT JOIN usuarios u ON p.id_usuario = u.id "
+                + "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_likes FROM likes GROUP BY id_publicacion) l "
+                + "    ON p.id_publicacion = l.id_publicacion "
+                + "LEFT JOIN (SELECT id_publicacion, COUNT(*) as cantidad_comentarios FROM comentarios GROUP BY id_publicacion) c "
+                + "    ON p.id_publicacion = c.id_publicacion "
+                + "WHERE p.esta_aprobado = TRUE "
+                + "AND (LOWER(p.texto) LIKE LOWER(?) OR LOWER(u.nombre_completo) LIKE LOWER(?)) "
+                + "ORDER BY p.fecha_publicacion DESC "
+                + "LIMIT 15";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             String searchTerm = "%" + termino + "%";
             stmt.setString(1, searchTerm);
@@ -492,8 +561,8 @@ public class PublicacionDAO implements IPublicacionDAO {
                 publicaciones.add(mapearPublicacionBasica(rs));
             }
 
-            System.out.println("🔍 Búsqueda en publicaciones: " + termino + 
-                              " - Encontradas: " + publicaciones.size());
+            System.out.println("🔍 Búsqueda en publicaciones: " + termino
+                    + " - Encontradas: " + publicaciones.size());
 
         } catch (SQLException e) {
             System.err.println("❌ Error al buscar publicaciones por texto: " + e.getMessage());
@@ -502,6 +571,7 @@ public class PublicacionDAO implements IPublicacionDAO {
 
         return publicaciones;
     }
+
     @Override
     public boolean aprobar(int idPublicacion) {
         String sql = "UPDATE publicaciones SET esta_aprobado = TRUE WHERE id_publicacion = ?";

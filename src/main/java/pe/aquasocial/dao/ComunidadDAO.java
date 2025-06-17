@@ -7,7 +7,9 @@ package pe.aquasocial.dao;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import pe.aquasocial.entity.Comunidad;
 import pe.aquasocial.entity.ComunidadMiembro;
 import pe.aquasocial.entity.SolicitudMembresia;
@@ -607,8 +609,7 @@ public class ComunidadDAO implements IComunidadDAO {
                 + "WHERE c.comunidad_username = ? "
                 + "ORDER BY c.seguidores_count DESC";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, cleanUsername);
             ResultSet rs = stmt.executeQuery();
@@ -617,8 +618,8 @@ public class ComunidadDAO implements IComunidadDAO {
                 comunidades.add(mapearComunidad(rs));
             }
 
-            System.out.println("🎯 Búsqueda exacta de comunidad por username: " + cleanUsername + 
-                              " - Encontradas: " + comunidades.size());
+            System.out.println("🎯 Búsqueda exacta de comunidad por username: " + cleanUsername
+                    + " - Encontradas: " + comunidades.size());
 
         } catch (SQLException e) {
             System.err.println("❌ Error buscar comunidad username exacto: " + e.getMessage());
@@ -1237,6 +1238,41 @@ public class ComunidadDAO implements IComunidadDAO {
 
         return 0;
     }
+
+    public List<Map<String, Object>> obtenerUnionesRecientesUsuario(int idUsuario, int limite) {
+        List<Map<String, Object>> uniones = new ArrayList<>();
+        String sql = "SELECT cm.fecha_union, c.nombre, c.username as comunidad_username, "
+                + "c.imagen_url, cm.rol "
+                + "FROM comunidad_miembros cm "
+                + "JOIN comunidades c ON cm.id_comunidad = c.id_comunidad "
+                + "WHERE cm.id_usuario = ? "
+                + "ORDER BY cm.fecha_union DESC LIMIT ?";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idUsuario);
+            stmt.setInt(2, limite);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Map<String, Object> union = new HashMap<>();
+                union.put("fechaUnion", rs.getTimestamp("fecha_union"));
+                union.put("nombreComunidad", rs.getString("nombre"));
+                union.put("usernameComunidad", rs.getString("comunidad_username"));
+                union.put("imagenComunidad", rs.getString("imagen_url"));
+                union.put("rol", rs.getString("rol"));
+
+                uniones.add(union);
+            }
+
+            System.out.println("🏘️ Obtenidas " + uniones.size() + " uniones recientes del usuario " + idUsuario);
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener uniones recientes: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return uniones;
+    }
 // ============= MÉTODOS AUXILIARES PARA MAPEO =============
     // ============= MÉTODOS NECESARIOS PARA ComunidadDAO =============
 
@@ -1249,8 +1285,7 @@ public class ComunidadDAO implements IComunidadDAO {
                 + "WHERE LOWER(c.descripcion) LIKE LOWER(?) "
                 + "ORDER BY c.seguidores_count DESC LIMIT 10";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + termino + "%");
             ResultSet rs = stmt.executeQuery();
@@ -1259,8 +1294,8 @@ public class ComunidadDAO implements IComunidadDAO {
                 comunidades.add(mapearComunidad(rs));
             }
 
-            System.out.println("📝 Búsqueda en descripción: " + termino + 
-                              " - Encontradas: " + comunidades.size());
+            System.out.println("📝 Búsqueda en descripción: " + termino
+                    + " - Encontradas: " + comunidades.size());
 
         } catch (SQLException e) {
             System.err.println("❌ Error buscar en descripción: " + e.getMessage());
@@ -1280,8 +1315,7 @@ public class ComunidadDAO implements IComunidadDAO {
                 + "WHERE c.comunidad_username LIKE ? "
                 + "ORDER BY c.seguidores_count DESC LIMIT 10";
 
-        try (Connection conn = Conexion.getConexion(); 
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, "%" + cleanTermino + "%");
             ResultSet rs = stmt.executeQuery();
@@ -1290,8 +1324,8 @@ public class ComunidadDAO implements IComunidadDAO {
                 comunidades.add(mapearComunidad(rs));
             }
 
-            System.out.println("🔍 Búsqueda por username: " + cleanTermino + 
-                              " - Encontradas: " + comunidades.size());
+            System.out.println("🔍 Búsqueda por username: " + cleanTermino
+                    + " - Encontradas: " + comunidades.size());
 
         } catch (SQLException e) {
             System.err.println("❌ Error buscar comunidad por username: " + e.getMessage());
@@ -1301,6 +1335,89 @@ public class ComunidadDAO implements IComunidadDAO {
         return comunidades;
     }
 
+    public List<Comunidad> obtenerComunidadesPublicasSeguidas(int idUsuario) {
+        List<Comunidad> comunidades = new ArrayList<>();
+        String sql = "SELECT c.*, u.username as username_creador,u.avatar as avatar_creador, u.nombre_completo as nombre_creador " +
+                    "FROM comunidades c " +
+                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
+                    "INNER JOIN comunidad_miembros cm ON c.id_comunidad = cm.id_comunidad " +
+                    "WHERE cm.id_usuario = ? AND c.es_publica = TRUE " +
+                    "ORDER BY c.nombre LIMIT 10";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+            System.out.println("🌍 Usuario " + idUsuario + " sigue " + comunidades.size() + " comunidades públicas");
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener comunidades públicas seguidas: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return comunidades;
+    }
+
+    /**
+     * Obtener comunidades públicas que administra un usuario
+     */
+    public List<Comunidad> obtenerComunidadesAdminPublicas(int idUsuario) {
+        List<Comunidad> comunidades = new ArrayList<>();
+        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador " +
+                    "FROM comunidades c " +
+                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
+                    "INNER JOIN comunidad_miembros cm ON c.id_comunidad = cm.id_comunidad " +
+                    "WHERE cm.id_usuario = ? AND cm.rol = ? AND c.es_publica = TRUE " +
+                    "ORDER BY c.nombre";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idUsuario);
+            stmt.setString(2, ComunidadMiembro.ROL_ADMIN);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+            System.out.println("🛡️ Usuario " + idUsuario + " administra " + comunidades.size() + " comunidades públicas");
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener comunidades admin públicas: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return comunidades;
+    }
+
+    /**
+     * Obtener comunidades creadas por un usuario
+     */
+    public List<Comunidad> obtenerComunidadesCreadas(int idUsuario) {
+        List<Comunidad> comunidades = new ArrayList<>();
+        String sql = "SELECT c.*, u.username as username_creador, u.nombre_completo as nombre_creador " +
+                    "FROM comunidades c " +
+                    "LEFT JOIN usuarios u ON c.id_creador = u.id " +
+                    "WHERE c.id_creador = ? " +
+                    "ORDER BY c.fecha_creacion DESC";
+
+        try (Connection conn = Conexion.getConexion(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idUsuario);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                comunidades.add(mapearComunidad(rs));
+            }
+
+            System.out.println("🏗️ Usuario " + idUsuario + " ha creado " + comunidades.size() + " comunidades");
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error al obtener comunidades creadas: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return comunidades;
+    }
     /**
      * Buscar comunidades en descripción
      */

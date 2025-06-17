@@ -613,7 +613,42 @@
                 
                 <!-- Secciones del Perfil -->
                 <div class="profile-sections">
-                    
+                    <div class="profile-card" style="grid-column: 1 / -1;">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-bar"></i>
+                                Estadísticas de Actividad
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                            <div class="stat-card">
+                                <div class="stat-card-number" id="comunidadesSeguidas">0</div>
+                                <div class="stat-card-label">Comunidades Seguidas</div>
+                            </div>
+
+                            <!-- ✅ NUEVA TARJETA DE PUBLICACIONES -->
+                            <div class="stat-card">
+                                <div class="stat-card-number" id="totalPublicaciones">0</div>
+                                <div class="stat-card-label">Publicaciones</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-card-number" id="solicitudesEnviadas">0</div>
+                                <div class="stat-card-label">Solicitudes Enviadas</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-card-number" id="solicitudesAprobadas">0</div>
+                                <div class="stat-card-label">Solicitudes Aprobadas</div>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="stat-card-number" id="comunidadesAdmin">0</div>
+                                <div class="stat-card-label">Comunidades Admin</div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Información Personal -->
                     <div class="profile-card">
                         <div class="card-header">
@@ -747,36 +782,7 @@
                         <% } %>
                     </div>
                     <!-- Estadísticas de Actividad -->
-                    <div class="profile-card" style="grid-column: 1 / -1;">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-chart-bar"></i>
-                                Estadísticas de Actividad
-                            </div>
-                        </div>
-                        
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-card-number" id="comunidadesSeguidas">0</div>
-                                <div class="stat-card-label">Comunidades Seguidas</div>
-                            </div>
-                            
-                            <div class="stat-card">
-                                <div class="stat-card-number" id="solicitudesEnviadas">0</div>
-                                <div class="stat-card-label">Solicitudes Enviadas</div>
-                            </div>
-                            
-                            <div class="stat-card">
-                                <div class="stat-card-number" id="solicitudesAprobadas">0</div>
-                                <div class="stat-card-label">Solicitudes Aprobadas</div>
-                            </div>
-                            
-                            <div class="stat-card">
-                                <div class="stat-card-number" id="comunidadesAdmin">0</div>
-                                <div class="stat-card-label">Comunidades Admin</div>
-                            </div>
-                        </div>
-                    </div>
+
                     
                 </div>
             </div>
@@ -1255,22 +1261,42 @@
                 success: function(data) {
                     if (data.success) {
                         const stats = data.stats;
-                        
+
                         // Actualizar contadores en header
                         $('#comunidadesCount').text(stats.comunidadesSeguidas || 0);
                         $('#solicitudesCount').text(stats.solicitudesEnviadas || 0);
-                        
-                        // Actualizar estadísticas detalladas
+
+                        // ===== ACTUALIZAR ESTADÍSTICAS DETALLADAS =====
                         $('#comunidadesSeguidas').text(stats.comunidadesSeguidas || 0);
+                        $('#totalPublicaciones').text(stats.totalPublicaciones || 0); // ← ESTA ES LA LÍNEA IMPORTANTE
                         $('#solicitudesEnviadas').text(stats.solicitudesEnviadas || 0);
                         $('#solicitudesAprobadas').text(stats.solicitudesAprobadas || 0);
                         $('#comunidadesAdmin').text(stats.comunidadesAdmin || 0);
-                        
-                        console.log('Estadísticas cargadas:', stats);
+
+                        // ===== ESTADÍSTICAS OPCIONALES (solo si existen en el DOM) =====
+                        // Solo actualizar si los elementos existen
+                        if ($('#publicacionesAprobadas').length) {
+                            $('#publicacionesAprobadas').text(stats.publicacionesAprobadas || 0);
+                        }
+                        if ($('#publicacionesPendientes').length) {
+                            $('#publicacionesPendientes').text(stats.publicacionesPendientes || 0);
+                        }
+                        if ($('#likesRecibidos').length) {
+                            $('#likesRecibidos').text(stats.likesRecibidos || 0);
+                        }
+                        if ($('#likesDados').length) {
+                            $('#likesDados').text(stats.likesDados || 0);
+                        }
+
+                        console.log('📊 Estadísticas cargadas:', stats);
+                    } else {
+                        console.log('❌ Error en respuesta:', data);
                     }
                 },
-                error: function() {
-                    console.log('Error al cargar estadísticas');
+                error: function(xhr, status, error) {
+                    console.log('❌ Error al cargar estadísticas:', error);
+                    console.log('Status:', status);
+                    console.log('Response:', xhr.responseText);
                 }
             });
         }

@@ -110,11 +110,12 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
                 Usuario usuario = new Usuario();
                 usuario.setId(rs.getInt("id"));
                 usuario.setUsername(rs.getString("username"));
-                usuario.setNombreCompleto(rs.getString("nombre_completo")); // Campo nuevo
+                usuario.setNombreCompleto(rs.getString("nombre_completo"));
                 usuario.setEmail(rs.getString("email"));
                 usuario.setPassword(rs.getString("password"));
                 usuario.setRol(rs.getString("rol"));
                 usuario.setAvatar(rs.getString("avatar"));
+                usuario.setBio(rs.getString("bio")); // ← AGREGAR ESTA LÍNEA
                 usuario.setVerificado(rs.getBoolean("verificado"));
                 usuario.setPrivilegio(rs.getBoolean("privilegio"));
                 usuario.setBaneado(rs.getBoolean("baneado"));
@@ -954,6 +955,7 @@ public class UsuarioDAO implements DAO<Usuario>, IPerfilDAO {
         usuario.setEmail(rs.getString("email"));
         usuario.setPassword(rs.getString("password"));
         usuario.setAvatar(rs.getString("avatar"));
+        usuario.setBio(rs.getString("bio"));
         usuario.setVerificado(rs.getBoolean("verificado"));
         usuario.setPrivilegio(rs.getBoolean("privilegio"));
 

@@ -20,9 +20,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.List;
+import pe.aquasocial.dao.ComentarioDAO;
 import pe.aquasocial.dao.UsuarioDAO;
 import pe.aquasocial.dao.ComunidadDAO;
+import pe.aquasocial.dao.LikeDAO;
+import pe.aquasocial.dao.PublicacionDAO;
 import pe.aquasocial.entity.Usuario;
+import pe.aquasocial.entity.Comunidad;
+import pe.aquasocial.entity.Publicacion;
 import pe.aquasocial.util.SessionUtil;
 
 @WebServlet(name = "PerfilServlet", urlPatterns = {"/PerfilServlet"})
@@ -35,6 +42,8 @@ public class PerfilServlet extends HttpServlet {
 
     private UsuarioDAO usuarioDAO;
     private ComunidadDAO comunidadDAO;
+    private PublicacionDAO publicacionDAO;
+
     private Gson gson;
 
     // Directorio para subir avatares
@@ -47,6 +56,8 @@ public class PerfilServlet extends HttpServlet {
         try {
             usuarioDAO = new UsuarioDAO();
             comunidadDAO = new ComunidadDAO();
+            publicacionDAO = new PublicacionDAO();
+
             gson = new Gson();
             System.out.println("✅ PerfilServlet inicializado correctamente");
         } catch (Exception e) {
@@ -61,9 +72,31 @@ public class PerfilServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
+        String idUsuarioParam = request.getParameter("id");
 
+        // Si hay un ID de usuario, mostrar perfil de ese usuario
+        if (idUsuarioParam != null && !idUsuarioParam.trim().isEmpty()) {
+            try {
+                int idUsuario = Integer.parseInt(idUsuarioParam);
+                mostrarPerfilUsuario(request, response, idUsuario);
+                return;
+            } catch (NumberFormatException e) {
+                System.err.println("❌ ID de usuario no válido: " + idUsuarioParam);
+                response.sendRedirect("BuscarServlet");
+                return;
+            }
+        }
+
+        // Si no hay action, mostrar perfil del usuario logueado
         if (action == null) {
-            // Mostrar página de perfil
+            // Verificar que hay usuario logueado
+            Usuario usuarioLogueado = SessionUtil.getLoggedUser(request);
+            if (usuarioLogueado == null) {
+                response.sendRedirect("LoginServlet");
+                return;
+            }
+
+            // Mostrar página de perfil propio
             request.getRequestDispatcher("/views/user/mi-perfil.jsp").forward(request, response);
             return;
         }
@@ -82,6 +115,217 @@ public class PerfilServlet extends HttpServlet {
             e.printStackTrace();
             enviarErrorJSON(response, "Error interno del servidor");
         }
+    }
+
+    
+    /**
+     * Mostrar perfil de un usuario específico
+     */
+    private void mostrarPerfilUsuario(HttpServletRequest request, HttpServletResponse response, int idUsuario)
+            throws ServletException, IOException {
+
+        try {
+            // ===== 1. OBTENER INFORMACIÓN BÁSICA =====
+            Usuario usuarioPerfilado = usuarioDAO.obtenerPorId(idUsuario);
+
+            if (usuarioPerfilado == null) {
+                // Usuario no existe
+                request.setAttribute("error", "Usuario no encontrado");
+                request.getRequestDispatcher("/views/error/404.jsp").forward(request, response);
+                return;
+            }
+
+            // ===== 2. DETERMINAR TIPO DE PERFIL =====
+            Usuario usuarioLogueado = SessionUtil.getLoggedUser(request);
+            boolean esPerfilPropio = usuarioLogueado != null && usuarioLogueado.getId() == idUsuario;
+
+            /*
+             * esPerfilPropio determina:
+             * - true: El usuario está viendo su propio perfil → Mostrar TODO
+             * - false: El usuario está viendo el perfil de otra persona → Mostrar solo lo PÚBLICO
+             */
+
+            // ===== 3. CALCULAR ESTADÍSTICAS =====
+            Map<String, Object> stats = new HashMap<>();
+
+            // 🔥 AQUÍ ES DONDE AGREGAMOS EL CONTEO DE PUBLICACIONES 🔥
+            PublicacionDAO publicacionDAO = new PublicacionDAO();
+            int totalPublicaciones = publicacionDAO.contarPorUsuario(idUsuario);
+            stats.put("totalPublicaciones", totalPublicaciones);
+
+            /*
+             * ¿Por qué es importante?
+             * - Sin esta línea: La JSP siempre muestra "0 Publicaciones"
+             * - Con esta línea: La JSP muestra el número real de publicaciones
+             */
+
+            if (esPerfilPropio) {
+                // ===== PERFIL PROPIO: Mostrar estadísticas completas =====
+
+                int comunidadesSeguidas = comunidadDAO.contarComunidadesSeguidas(idUsuario);
+                int solicitudesEnviadas = comunidadDAO.contarSolicitudesUsuario(idUsuario);
+                int solicitudesAprobadas = comunidadDAO.contarSolicitudesAprobadas(idUsuario);
+                int comunidadesAdmin = comunidadDAO.contarComunidadesAdmin(idUsuario);
+
+                stats.put("comunidadesSeguidas", comunidadesSeguidas);
+                stats.put("solicitudesEnviadas", solicitudesEnviadas);
+                stats.put("solicitudesAprobadas", solicitudesAprobadas);
+                stats.put("comunidadesAdmin", comunidadesAdmin);
+
+                /*
+                 * Para perfil propio también podrías mostrar:
+                 * - Publicaciones pendientes de aprobación
+                 * - Estadísticas de likes recibidos/dados
+                 * - Datos privados de actividad
+                 */
+
+            } else {
+                // ===== PERFIL DE OTRO: Solo estadísticas públicas =====
+
+                int comunidadesSeguidas = comunidadDAO.contarComunidadesSeguidas(idUsuario);
+                stats.put("comunidadesSeguidas", comunidadesSeguidas);
+
+                /*
+                 * ⚠️ NOTA IMPORTANTE:
+                 * Para otros usuarios, podrías querer mostrar solo publicaciones APROBADAS
+                 * en lugar del total, para no revelar publicaciones pendientes:
+                 * 
+                 * int publicacionesAprobadas = publicacionDAO.contarPublicacionesAprobadasUsuario(idUsuario);
+                 * stats.put("totalPublicaciones", publicacionesAprobadas);
+                 */
+            }
+
+            // ===== 4. OBTENER ACTIVIDAD RECIENTE =====
+            Map<String, Object> actividadReciente = obtenerActividadReciente(idUsuario, esPerfilPropio);
+
+            // ===== 5. ENVIAR DATOS A LA JSP =====
+            request.setAttribute("usuarioPerfilado", usuarioPerfilado);
+            request.setAttribute("estadisticas", stats);              // ← AQUÍ VAN LAS ESTADÍSTICAS
+            request.setAttribute("esPerfilPropio", esPerfilPropio);
+            request.setAttribute("actividadReciente", actividadReciente);
+
+            /*
+             * Estos atributos son los que la JSP usa para mostrar la información:
+             * - usuarioPerfilado: Información del usuario (nombre, avatar, etc.)
+             * - estadisticas: Números que aparecen en las tarjetas (publicaciones, comunidades, etc.)
+             * - esPerfilPropio: Para decidir qué botones/opciones mostrar
+             * - actividadReciente: Para la sección de actividad reciente
+             */
+
+            // ===== 6. DECIDIR QUÉ PÁGINA MOSTRAR =====
+            if (esPerfilPropio) {
+                // Página de perfil propio (editable)
+                request.getRequestDispatcher("/views/user/mi-perfil.jsp").forward(request, response);
+            } else {
+                // Página de perfil de otro usuario (solo lectura)
+                request.getRequestDispatcher("/views/user/ver-perfil.jsp").forward(request, response);
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al mostrar perfil de usuario: " + e.getMessage());
+            e.printStackTrace();
+            request.setAttribute("error", "Error al cargar el perfil del usuario");
+            request.getRequestDispatcher("/views/error/500.jsp").forward(request, response);
+        }
+    }
+
+    
+    
+
+    private Map<String, Object> obtenerActividadReciente(int idUsuario, boolean esPerfilPropio) {
+        Map<String, Object> actividad = new HashMap<>();
+
+        try {
+            // Publicaciones recientes (ya implementado)
+            List<Publicacion> publicacionesRecientes = publicacionDAO.obtenerPublicacionesRecientesUsuario(idUsuario, 5);
+
+            // NUEVO: Información de comunidades
+            Map<String, Object> infoComunidades = obtenerInfoComunidades(idUsuario, esPerfilPropio);
+
+            if (esPerfilPropio) {
+                // Uniones recientes a comunidades
+                List<Map<String, Object>> unionesRecientes = comunidadDAO.obtenerUnionesRecientesUsuario(idUsuario, 3);
+                actividad.put("unionesRecientes", unionesRecientes);
+            }
+
+            actividad.put("publicacionesRecientes", publicacionesRecientes);
+            actividad.put("comunidades", infoComunidades);
+            actividad.put("tieneActividad", !publicacionesRecientes.isEmpty());
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener actividad reciente: " + e.getMessage());
+            e.printStackTrace();
+            actividad.put("tieneActividad", false);
+            actividad.put("publicacionesRecientes", new ArrayList<>());
+            actividad.put("comunidades", new HashMap<>());
+        }
+
+        return actividad;
+    }
+
+    private Map<String, Object> obtenerInfoComunidades(int idUsuario, boolean esPerfilPropio) {
+        Map<String, Object> infoComunidades = new HashMap<>();
+
+        try {
+            if (esPerfilPropio) {
+                // ===== PERFIL PROPIO: Mostrar información completa =====
+
+                // Comunidades que sigue
+                List<Comunidad> comunidadesSeguidas = comunidadDAO.obtenerComunidadesSeguidas(idUsuario);
+                infoComunidades.put("seguidas", comunidadesSeguidas.size() > 6 ? 
+                                   comunidadesSeguidas.subList(0, 6) : comunidadesSeguidas);
+                infoComunidades.put("totalSeguidas", comunidadesSeguidas.size());
+
+                // Comunidades que administra
+                List<Comunidad> comunidadesAdmin = comunidadDAO.obtenerComunidadesQueAdministra(idUsuario);
+                infoComunidades.put("administra", comunidadesAdmin);
+                infoComunidades.put("totalAdministra", comunidadesAdmin.size());
+
+                // Comunidades creadas
+                List<Comunidad> comunidadesCreadas = comunidadDAO.obtenerComunidadesCreadas(idUsuario);
+                infoComunidades.put("creadas", comunidadesCreadas);
+                infoComunidades.put("totalCreadas", comunidadesCreadas.size());
+
+                // Estadísticas de solicitudes
+                int solicitudesPendientes = comunidadDAO.contarSolicitudesUsuario(idUsuario);
+                int solicitudesAprobadas = comunidadDAO.contarSolicitudesAprobadas(idUsuario);
+                int solicitudesRechazadas = comunidadDAO.contarSolicitudesRechazadas(idUsuario);
+
+                infoComunidades.put("solicitudesPendientes", solicitudesPendientes);
+                infoComunidades.put("solicitudesAprobadas", solicitudesAprobadas);
+                infoComunidades.put("solicitudesRechazadas", solicitudesRechazadas);
+
+            } else {
+                // ===== PERFIL DE OTRO USUARIO: Solo información pública =====
+
+                // Solo comunidades públicas que sigue
+                List<Comunidad> comunidadesPublicas = comunidadDAO.obtenerComunidadesPublicasSeguidas(idUsuario);
+                infoComunidades.put("seguidas", comunidadesPublicas.size() > 6 ? 
+                                   comunidadesPublicas.subList(0, 6) : comunidadesPublicas);
+                infoComunidades.put("totalSeguidas", comunidadesPublicas.size());
+
+                // Comunidades que administra (públicas)
+                List<Comunidad> comunidadesAdminPublicas = comunidadDAO.obtenerComunidadesAdminPublicas(idUsuario);
+                infoComunidades.put("administra", comunidadesAdminPublicas);
+                infoComunidades.put("totalAdministra", comunidadesAdminPublicas.size());
+            }
+
+            infoComunidades.put("esPerfilPropio", esPerfilPropio);
+
+            System.out.println("🏘️ Info de comunidades obtenida para usuario " + idUsuario 
+                             + " (perfil propio: " + esPerfilPropio + ")");
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener info de comunidades: " + e.getMessage());
+            e.printStackTrace();
+            // Valores por defecto en caso de error
+            infoComunidades.put("seguidas", new ArrayList<>());
+            infoComunidades.put("administra", new ArrayList<>());
+            infoComunidades.put("totalSeguidas", 0);
+            infoComunidades.put("totalAdministra", 0);
+        }
+
+        return infoComunidades;
     }
 
     @Override
@@ -135,21 +379,38 @@ public class PerfilServlet extends HttpServlet {
         try {
             Map<String, Object> stats = new HashMap<>();
 
-            // Comunidades que sigue
+            // ===== ESTADÍSTICAS BÁSICAS (que ya tienes) =====
             int comunidadesSeguidas = comunidadDAO.contarComunidadesSeguidas(usuario.getId());
             stats.put("comunidadesSeguidas", comunidadesSeguidas);
 
-            // Solicitudes enviadas
             int solicitudesEnviadas = comunidadDAO.contarSolicitudesUsuario(usuario.getId());
             stats.put("solicitudesEnviadas", solicitudesEnviadas);
 
-            // Solicitudes aprobadas
             int solicitudesAprobadas = comunidadDAO.contarSolicitudesAprobadas(usuario.getId());
             stats.put("solicitudesAprobadas", solicitudesAprobadas);
 
-            // Comunidades donde es admin
             int comunidadesAdmin = comunidadDAO.contarComunidadesAdmin(usuario.getId());
             stats.put("comunidadesAdmin", comunidadesAdmin);
+
+            // ===== ESTADÍSTICAS DE PUBLICACIONES =====
+            PublicacionDAO publicacionDAO = new PublicacionDAO();
+            int totalPublicaciones = publicacionDAO.contarPorUsuario(usuario.getId());
+            stats.put("totalPublicaciones", totalPublicaciones);
+
+            // ===== SOLO SI IMPLEMENTAS LOS MÉTODOS OPCIONALES =====
+            // Descomenta estas líneas cuando tengas los métodos:
+
+            int publicacionesAprobadas = publicacionDAO.contarPublicacionesAprobadasUsuario(usuario.getId());
+            stats.put("publicacionesAprobadas", publicacionesAprobadas);
+            // 
+            int publicacionesPendientes = totalPublicaciones - publicacionesAprobadas;
+            stats.put("publicacionesPendientes", publicacionesPendientes);
+            //
+            LikeDAO likeDAO = new LikeDAO();
+            int likesRecibidos = likeDAO.contarLikesRecibidosUsuario(usuario.getId());
+            int likesDados = likeDAO.contarLikesDadosUsuario(usuario.getId());
+            stats.put("likesRecibidos", likesRecibidos);
+            stats.put("likesDados", likesDados);
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("success", true);
@@ -157,7 +418,8 @@ public class PerfilServlet extends HttpServlet {
 
             enviarJSON(response, responseData);
 
-            System.out.println("📊 Estadísticas obtenidas para usuario: " + usuario.getId());
+            System.out.println("📊 Estadísticas obtenidas para usuario: " + usuario.getId() 
+                             + " - Publicaciones: " + totalPublicaciones);
 
         } catch (Exception e) {
             System.err.println("❌ Error al obtener estadísticas: " + e.getMessage());
